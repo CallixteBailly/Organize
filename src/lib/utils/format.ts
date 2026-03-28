@@ -1,0 +1,32 @@
+export function formatCurrency(amount: number | string, currency = "EUR"): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency,
+  }).format(num);
+}
+
+export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    ...options,
+  }).format(d);
+}
+
+export function formatDateTime(date: Date | string): string {
+  return formatDate(date, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatPhone(phone: string): string {
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.length === 10) {
+    return cleaned.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, "$1 $2 $3 $4 $5");
+  }
+  return phone;
+}
