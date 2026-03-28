@@ -1,15 +1,15 @@
 import { getCatalogConfig } from "./config";
 import { getCachedVehicle, setCachedVehicle, getCachedParts, setCachedParts } from "./cache";
-import { SivProvider } from "./providers/siv.provider";
 import { MockCatalogProvider } from "./providers/mock.provider";
 import { TecDocProvider } from "./providers/tecdoc.provider";
-import { AutoDocProvider } from "./providers/autodoc.provider";
-import { CatalogDisabledError, CatalogProviderError } from "./errors";
+import { HistovecProvider, type HistovecParams } from "./providers/histovec.provider";
+import { CatalogDisabledError } from "./errors";
 import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory } from "./types";
 
 export * from "./types";
 export * from "./errors";
 export * from "./config";
+export type { HistovecParams } from "./providers/histovec.provider";
 
 function normalizePlate(plate: string): string {
   return plate.toUpperCase().replace(/[\s-]/g, "");
@@ -22,10 +22,8 @@ function getProvider(): IVehicleCatalogProvider {
 
   const config = getCatalogConfig();
 
-  if (config.provider === "autodoc") {
-    // Les cookies sont gérés automatiquement par CloudflareSessionManager (stratégie cloudscraper)
-    // AUTODOC_COOKIES / AUTODOC_CSRF_TOKEN optionnels — remplacent le premier bootstrap Playwright
-    _provider = new AutoDocProvider();
+  if (config.provider === "histovec") {
+    _provider = new HistovecProvider();
   } else if (config.provider === "tecdoc") {
     _provider = new TecDocProvider(
       config.tecdocApiKey ?? "",
@@ -39,25 +37,38 @@ function getProvider(): IVehicleCatalogProvider {
   return _provider;
 }
 
-// Permet de réinitialiser le provider (ex: après mise à jour des cookies)
 export function resetProvider(): void {
   _provider = null;
 }
 
-export async function resolvePlateWithCache(rawPlate: string): Promise<CatalogVehicle | null> {
+/**
+ * Résout une plaque.
+ * histovecParams requis si CATALOG_PROVIDER=histovec (formule + nom du titulaire).
+ */
+export async function resolvePlateWithCache(
+  rawPlate: string,
+  histovecParams?: HistovecParams,
+): Promise<CatalogVehicle | null> {
   const config = getCatalogConfig();
   if (!config.enabled) throw new CatalogDisabledError();
 
   const plate = normalizePlate(rawPlate);
 
-  const cached = await getCachedVehicle(plate);
+  // Cache keyed par plaque + formule pour éviter les collisions entre véhicules différents
+  const cacheKey = histovecParams?.formule ? `${plate}:${histovecParams.formule}` : plate;
+  const cached = await getCachedVehicle(cacheKey);
   if (cached) return cached;
 
   const provider = getProvider();
-  const vehicle = await provider.resolveVehicleByPlate(plate);
+
+  // HistovecProvider accepte un second paramètre
+  const vehicle =
+    provider instanceof HistovecProvider
+      ? await provider.resolveVehicleByPlate(plate, histovecParams)
+      : await provider.resolveVehicleByPlate(plate);
 
   if (vehicle) {
-    await setCachedVehicle(plate, vehicle, config.cacheTtlVehicle);
+    await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);
   }
 
   return vehicle;

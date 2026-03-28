@@ -7,6 +7,9 @@ import { checkAIRateLimit } from "@/lib/ai/rate-limit";
 
 async function handler(req: NextRequest, ctx: AuthContext) {
   const rawPlate = req.nextUrl.searchParams.get("plate") ?? "";
+  const formule   = req.nextUrl.searchParams.get("formule") ?? undefined;
+  const nom       = req.nextUrl.searchParams.get("nom") ?? undefined;
+  const prenoms   = req.nextUrl.searchParams.get("prenoms") ?? undefined;
 
   const parsed = plateSearchSchema.safeParse({ plate: rawPlate });
   if (!parsed.success) {
@@ -24,8 +27,13 @@ async function handler(req: NextRequest, ctx: AuthContext) {
     return NextResponse.json({ error: "Trop de requêtes. Réessayez dans quelques secondes." }, { status: 429 });
   }
 
+  // Paramètres Histovec (optionnels — ignorés en mode mock)
+  const histovecParams = formule && nom
+    ? { formule, nom, prenoms: prenoms ? prenoms.split(",") : undefined }
+    : undefined;
+
   try {
-    const vehicle = await resolvePlateWithCache(plate);
+    const vehicle = await resolvePlateWithCache(plate, histovecParams);
 
     if (!vehicle) {
       return NextResponse.json(
@@ -34,7 +42,6 @@ async function handler(req: NextRequest, ctx: AuthContext) {
       );
     }
 
-    // Cross-référence avec les véhicules du garage
     const localVehicles = await searchVehicleByPlate(ctx.garageId, plate);
     const localVehicle = localVehicles[0] ?? null;
 

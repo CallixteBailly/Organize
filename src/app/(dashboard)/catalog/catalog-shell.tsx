@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Spinner } from "@/components/ui/spinner";
-import { PlateSearchForm } from "./plate-search-form";
+import { PlateSearchForm, type SearchParams } from "./plate-search-form";
 import { VehicleCard } from "./vehicle-card";
 import { PartsCatalog } from "./parts-catalog";
 import type { CatalogVehicle, CatalogCategory } from "@/lib/catalog";
@@ -28,9 +28,10 @@ interface PartsResponse {
 interface Props {
   initialPlate?: string;
   targetRepairOrderId?: string;
+  useHistovec: boolean;
 }
 
-export function CatalogShell({ initialPlate, targetRepairOrderId }: Props) {
+export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }: Props) {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [partsLoading, setPartsLoading] = useState(false);
   const [vehicle, setVehicle] = useState<CatalogVehicle | null>(null);
@@ -60,7 +61,7 @@ export function CatalogShell({ initialPlate, targetRepairOrderId }: Props) {
   }, []);
 
   const handleSearch = useCallback(
-    async (plate: string) => {
+    async ({ plate, formule, nom }: SearchParams) => {
       setSearchedPlate(plate);
       setLookupLoading(true);
       setLookupError(null);
@@ -71,7 +72,12 @@ export function CatalogShell({ initialPlate, targetRepairOrderId }: Props) {
 
       try {
         const normalized = plate.replace(/[\s-]/g, "");
-        const res = await fetch(`/api/catalog/lookup?plate=${encodeURIComponent(normalized)}`);
+        const url = new URL("/api/catalog/lookup", window.location.origin);
+        url.searchParams.set("plate", normalized);
+        if (formule) url.searchParams.set("formule", formule);
+        if (nom) url.searchParams.set("nom", nom);
+
+        const res = await fetch(url.toString());
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           setLookupError(data.error ?? "Véhicule introuvable");
@@ -96,6 +102,7 @@ export function CatalogShell({ initialPlate, targetRepairOrderId }: Props) {
         defaultValue={initialPlate}
         loading={lookupLoading}
         error={lookupError}
+        useHistovec={useHistovec}
         onSearch={handleSearch}
       />
 
@@ -114,9 +121,7 @@ export function CatalogShell({ initialPlate, targetRepairOrderId }: Props) {
         </div>
       )}
 
-      {partsError && (
-        <p className="text-sm text-destructive">{partsError}</p>
-      )}
+      {partsError && <p className="text-sm text-destructive">{partsError}</p>}
 
       {categories && !partsLoading && (
         <PartsCatalog

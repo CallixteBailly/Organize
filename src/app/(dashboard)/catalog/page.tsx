@@ -12,16 +12,22 @@ export default async function CatalogPage({ searchParams }: Props) {
   if (!session?.user) redirect("/login");
 
   const params = await searchParams;
+  const useHistovec = process.env.CATALOG_PROVIDER === "histovec";
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Catalogue pièces"
-        description="Recherche par immatriculation — pièces compatibles par catégorie"
+        description={
+          useHistovec
+            ? "Identification via Histovec (ANTS) — plaque + carte grise requises"
+            : "Recherche par immatriculation — pièces compatibles par catégorie"
+        }
       />
       <CatalogShell
         initialPlate={params.plate}
         targetRepairOrderId={params.roId}
+        useHistovec={useHistovec}
       />
     </div>
   );
