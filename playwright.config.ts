@@ -2,30 +2,39 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  workers: 1,
+  reporter: [["list"], ["html", { open: "never" }]],
+  globalSetup: "./e2e/global-setup.ts",
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    actionTimeout: 10000,
   },
   projects: [
     {
-      name: "Mobile Chrome",
-      use: { ...devices["Pixel 5"] },
-    },
-    {
       name: "Desktop Chrome",
       use: { ...devices["Desktop Chrome"] },
+      testMatch: /(?!.*mobile).*\.spec\.ts/,
+    },
+    {
+      name: "Mobile Chrome",
+      use: { ...devices["Pixel 5"] },
+      testMatch: /mobile\.spec\.ts/,
     },
   ],
   webServer: {
     command: "pnpm dev",
     url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 30000,
+    env: {
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:54322/organize",
+      AUTH_SECRET: "dev-secret-key-change-in-production-min-32-chars",
+      AUTH_URL: "http://localhost:3000",
+    },
   },
 });
