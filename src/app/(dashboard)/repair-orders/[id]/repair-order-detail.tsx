@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
-import { Plus, Trash2, CheckCircle, List } from "lucide-react";
+import { Plus, Trash2, CheckCircle, List, Zap, Loader2 } from "lucide-react";
 import {
   addLineAction,
   removeLineAction,
   closeRepairOrderAction,
   type RepairOrderActionState,
 } from "@/server/actions/repair-orders";
+import { useAI } from "@/components/ai/ai-provider";
 import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "success" | "warning" | "destructive" }> = {
@@ -69,6 +70,9 @@ export function RepairOrderDetail({ data }: Props) {
 
   const [addLineState, addLineFormAction, addLinePending] = useActionState(addLineAction, addLineInitial);
   const [closing, setClosing] = useState(false);
+  const [diagnosing, setDiagnosing] = useState(false);
+  const [suggestedDiagnosis, setSuggestedDiagnosis] = useState<string | null>(null);
+  const { isEnabled: aiEnabled } = useAI();
 
   useEffect(() => {
     if (addLineState.success) toast.success("Ligne ajoutee");
@@ -87,6 +91,23 @@ export function RepairOrderDetail({ data }: Props) {
     const result = await removeLineAction(lineId, ro.id);
     if (result.success) toast.success("Ligne supprimee");
     else toast.error(result.error ?? "Erreur");
+  }
+
+  async function handleSuggestDiagnosis() {
+    setDiagnosing(true);
+    try {
+      const res = await fetch(`/api/repair-orders/${ro.id}/suggest-diagnosis`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur");
+      setSuggestedDiagnosis(data.diagnosis);
+      toast.success("Diagnostic IA généré");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors du diagnostic IA");
+    } finally {
+      setDiagnosing(false);
+    }
   }
 
   return (
@@ -133,10 +154,37 @@ export function RepairOrderDetail({ data }: Props) {
       </div>
 
       {/* Notes */}
-      {(ro.customerComplaint || ro.diagnosis || ro.workPerformed) && (
+      {(ro.customerComplaint || ro.diagnosis || ro.workPerformed || suggestedDiagnosis) && (
         <Card>
-          <CardContent className="space-y-2 pt-4 text-sm">
-            {ro.customerComplaint && <div><strong>Plainte client :</strong> {ro.customerComplaint}</div>}
+          <CardContent className="space-y-3 pt-4 text-sm">
+            {ro.customerComplaint && (
+              <div>
+                <strong>Plainte client :</strong> {ro.customerComplaint}
+                {aiEnabled && !ro.diagnosis && !suggestedDiagnosis && isEditable && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-3"
+                    onClick={handleSuggestDiagnosis}
+                    disabled={diagnosing}
+                  >
+                    {diagnosing ? (
+                      <><Loader2 className="h-3 w-3 animate-spin" /> Analyse...</>
+                    ) : (
+                      <><Zap className="h-3 w-3" /> Suggestion diagnostic</>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+            {suggestedDiagnosis && !ro.diagnosis && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-primary">
+                  <Zap className="h-3 w-3" /> Diagnostic suggéré par l&apos;IA
+                </div>
+                <div className="whitespace-pre-line text-sm">{suggestedDiagnosis}</div>
+              </div>
+            )}
             {ro.diagnosis && <div><strong>Diagnostic :</strong> {ro.diagnosis}</div>}
             {ro.workPerformed && <div><strong>Travaux realises :</strong> {ro.workPerformed}</div>}
           </CardContent>

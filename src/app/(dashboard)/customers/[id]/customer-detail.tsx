@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Phone, Mail, MapPin, Car, Wrench, FileText, Euro, Plus } from "lucide-react";
+import { Phone, Mail, MapPin, Car, Wrench, FileText, Euro, Plus, Zap, Loader2, MessageSquare, Copy } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
+import { useAI } from "@/components/ai/ai-provider";
 import { AddVehicleDialog } from "./add-vehicle-dialog";
+import { toast } from "sonner";
+import type { MessageType } from "@/lib/ai/prompts/message-draft-prompt";
 
 interface Vehicle {
   id: string;
@@ -49,8 +52,44 @@ interface Props {
   stats: Stats;
 }
 
+const MESSAGE_TYPES: { value: MessageType; label: string }[] = [
+  { value: "vehicle_ready", label: "Véhicule prêt" },
+  { value: "maintenance_reminder", label: "Rappel entretien" },
+  { value: "quote_followup", label: "Relance devis" },
+];
+
 export function CustomerDetail({ customer, stats }: Props) {
   const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [draftedMessage, setDraftedMessage] = useState<string | null>(null);
+  const [showMessageUI, setShowMessageUI] = useState(false);
+  const { isEnabled: aiEnabled } = useAI();
+
+  async function handleDraftMessage(type: MessageType) {
+    setDrafting(true);
+    try {
+      const res = await fetch(`/api/customers/${customer.id}/draft-message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur");
+      setDraftedMessage(data.message);
+      toast.success("Message rédigé");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur IA");
+    } finally {
+      setDrafting(false);
+    }
+  }
+
+  function handleCopyMessage() {
+    if (draftedMessage) {
+      navigator.clipboard.writeText(draftedMessage);
+      toast.success("Message copié dans le presse-papier");
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -103,6 +142,62 @@ export function CustomerDetail({ customer, stats }: Props) {
           )}
         </CardContent>
       </Card>
+
+      {/* Communication IA */}
+      {aiEnabled && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" /> Communication
+            </CardTitle>
+            {!showMessageUI && (
+              <Button variant="outline" size="sm" onClick={() => setShowMessageUI(true)}>
+                <Zap className="h-3 w-3" /> Rédiger un message
+              </Button>
+            )}
+          </CardHeader>
+          {showMessageUI && (
+            <CardContent className="space-y-3">
+              {!draftedMessage ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Choisissez le type de message :</p>
+                  <div className="flex flex-wrap gap-2">
+                    {MESSAGE_TYPES.map((mt) => (
+                      <Button
+                        key={mt.value}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDraftMessage(mt.value)}
+                        disabled={drafting}
+                      >
+                        {drafting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+                        {mt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary">
+                      <Zap className="h-3 w-3" /> Message généré par l&apos;IA
+                    </div>
+                    <p className="text-sm">{draftedMessage}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleCopyMessage}>
+                      <Copy className="h-3 w-3" /> Copier
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setDraftedMessage(null); setShowMessageUI(false); }}>
+                      Fermer
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {/* Vehicules */}
       <Card>

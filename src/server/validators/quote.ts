@@ -3,7 +3,11 @@ import { z } from "zod/v4";
 export const createQuoteSchema = z.object({
   customerId: z.uuid("Client requis"),
   vehicleId: z.uuid().optional().or(z.literal("")),
-  validUntil: z.coerce.date().optional(),
+  validUntil: z.string().optional().transform(v => {
+    if (!v || v === "") return undefined;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? undefined : d;
+  }),
   notes: z.string().optional(),
 });
 
