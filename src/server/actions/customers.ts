@@ -39,12 +39,14 @@ export async function createCustomerAction(
 }
 
 export async function updateCustomerAction(
-  customerId: string,
   _prevState: CustomerActionState,
   formData: FormData,
 ): Promise<CustomerActionState> {
   const session = await auth();
   if (!session?.user) return { success: false, error: "Non authentifie" };
+
+  const customerId = formData.get("customerId") as string;
+  if (!customerId) return { success: false, error: "Client non specifie" };
 
   const raw = Object.fromEntries(formData);
   const parsed = updateCustomerSchema.safeParse(raw);

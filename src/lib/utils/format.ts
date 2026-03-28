@@ -1,5 +1,6 @@
 export function formatCurrency(amount: number | string, currency = "EUR"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(num)) return "—";
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency,

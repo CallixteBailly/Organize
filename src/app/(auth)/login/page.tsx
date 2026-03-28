@@ -11,7 +11,8 @@ import { Spinner } from "@/components/ui/spinner";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const rawCallback = searchParams.get("callbackUrl") ?? "/";
+  const callbackUrl = rawCallback.startsWith("/") ? rawCallback : "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

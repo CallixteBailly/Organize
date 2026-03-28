@@ -40,7 +40,6 @@ export async function createUserAction(
 }
 
 export async function updateUserAction(
-  userId: string,
   _prevState: UserActionState,
   formData: FormData,
 ): Promise<UserActionState> {
@@ -48,6 +47,9 @@ export async function updateUserAction(
   if (!session?.user || !["owner", "manager"].includes(session.user.role)) {
     return { success: false, error: "Acces refuse" };
   }
+
+  const userId = formData.get("userId") as string;
+  if (!userId) return { success: false, error: "Utilisateur non specifie" };
 
   const raw = Object.fromEntries(formData);
   const parsed = updateUserSchema.safeParse(raw);

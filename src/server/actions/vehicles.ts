@@ -35,12 +35,14 @@ export async function createVehicleAction(
 }
 
 export async function updateVehicleAction(
-  vehicleId: string,
   _prevState: VehicleActionState,
   formData: FormData,
 ): Promise<VehicleActionState> {
   const session = await auth();
   if (!session?.user) return { success: false, error: "Non authentifie" };
+
+  const vehicleId = formData.get("vehicleId") as string;
+  if (!vehicleId) return { success: false, error: "Vehicule non specifie" };
 
   const raw = Object.fromEntries(formData);
   const parsed = updateVehicleSchema.safeParse(raw);

@@ -15,7 +15,9 @@ export async function updateGarageAction(
   formData: FormData,
 ): Promise<GarageActionState> {
   const session = await auth();
-  if (!session?.user) return { success: false, error: "Non authentifie" };
+  if (!session?.user || !["owner", "manager"].includes(session.user.role)) {
+    return { success: false, error: "Acces refuse" };
+  }
 
   const raw = Object.fromEntries(formData);
   const parsed = updateGarageSchema.safeParse(raw);

@@ -183,14 +183,17 @@ export async function recordStockMovement(
   userId: string,
   data: CreateStockMovementInput,
 ) {
-  // Record the movement
+  // Compute signed delta: exit subtracts, everything else adds
+  const delta = data.type === "exit" ? -Math.abs(data.quantity) : Math.abs(data.quantity);
+
+  // Record the movement with the same signed delta for audit consistency
   const [movement] = await db
     .insert(stockMovements)
     .values({
       garageId,
       stockItemId: data.stockItemId,
       type: data.type,
-      quantity: data.type === "exit" ? -Math.abs(data.quantity) : Math.abs(data.quantity),
+      quantity: delta,
       unitPrice: data.unitPrice?.toString(),
       reason: data.reason,
       repairOrderId: data.repairOrderId || null,
@@ -199,8 +202,7 @@ export async function recordStockMovement(
     })
     .returning();
 
-  // Update stock quantity
-  const delta = data.type === "exit" || data.type === "return" ? -data.quantity : data.quantity;
+  // Update stock quantity with the same delta
   await db
     .update(stockItems)
     .set({

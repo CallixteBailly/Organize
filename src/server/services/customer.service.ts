@@ -1,4 +1,4 @@
-import { eq, and, or, ilike, sql, desc } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, sql, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { customers, vehicles, repairOrders, invoices } from "@/lib/db/schema";
 import type { CreateCustomerInput, UpdateCustomerInput } from "@/server/validators/customer";
@@ -85,7 +85,13 @@ export async function getCustomerStats(garageId: string, customerId: string) {
       total: sql<number>`coalesce(sum(${invoices.totalTtc}::numeric), 0)`,
     })
     .from(invoices)
-    .where(and(eq(invoices.customerId, customerId), eq(invoices.garageId, garageId)));
+    .where(
+      and(
+        eq(invoices.customerId, customerId),
+        eq(invoices.garageId, garageId),
+        inArray(invoices.status, ["finalized", "sent", "paid", "partially_paid", "overdue"]),
+      ),
+    );
 
   return {
     repairOrderCount: Number(roCount.count),

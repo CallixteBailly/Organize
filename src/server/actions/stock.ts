@@ -48,12 +48,14 @@ export async function createStockItemAction(
 }
 
 export async function updateStockItemAction(
-  itemId: string,
   _prevState: StockActionState,
   formData: FormData,
 ): Promise<StockActionState> {
   const session = await auth();
   if (!session?.user) return { success: false, error: "Non authentifie" };
+
+  const itemId = formData.get("itemId") as string;
+  if (!itemId) return { success: false, error: "Article non specifie" };
 
   const raw = Object.fromEntries(formData);
   const parsed = updateStockItemSchema.safeParse(raw);
