@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/layouts/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Users, ChevronRight } from "lucide-react";
+import { Building2, Users, Truck, ChevronRight } from "lucide-react";
 
 const settingsLinks = [
   {
@@ -15,6 +15,12 @@ const settingsLinks = [
     icon: Users,
     label: "Equipe",
     description: "Gerer les utilisateurs et leurs roles",
+  },
+  {
+    href: "/settings/suppliers",
+    icon: Truck,
+    label: "Fournisseurs",
+    description: "Gerer vos fournisseurs de pieces detachees",
   },
 ];
 
