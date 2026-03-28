@@ -9,14 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
-import { Plus, Trash2, ArrowRight, List } from "lucide-react";
+import { Plus, Trash2, ArrowRight, List, Zap, Loader2 } from "lucide-react";
 import {
   addQuoteLineAction,
   removeQuoteLineAction,
   convertQuoteAction,
   type QuoteActionState,
 } from "@/server/actions/quotes";
+import { useAI } from "@/components/ai/ai-provider";
 import { toast } from "sonner";
+import type { SuggestedLine } from "@/lib/ai/prompts/quote-lines-prompt";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "success" | "warning" | "destructive" }> = {
   draft: { label: "Brouillon", variant: "secondary" },
@@ -66,6 +68,10 @@ export function QuoteDetail({ data }: Props) {
 
   const [addLineState, addLineFormAction, addLinePending] = useActionState(addQuoteLineAction, addLineInitial);
   const [converting, setConverting] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestedLines, setSuggestedLines] = useState<SuggestedLine[]>([]);
+  const [suggestNotes, setSuggestNotes] = useState<string>("");
+  const { isEnabled: aiEnabled } = useAI();
 
   useEffect(() => {
     if (addLineState.success) toast.success("Ligne ajoutee");
@@ -88,6 +94,52 @@ export function QuoteDetail({ data }: Props) {
     const result = await removeQuoteLineAction(lineId, q.id);
     if (result.success) toast.success("Ligne supprimee");
     else toast.error(result.error ?? "Erreur");
+  }
+
+  async function handleSuggestLines() {
+    setSuggesting(true);
+    try {
+      const res = await fetch(`/api/quotes/${q.id}/suggest-lines`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur");
+      setSuggestedLines(data.lines ?? []);
+      setSuggestNotes(data.notes ?? "");
+      toast.success(`${data.lines?.length ?? 0} lignes suggérées`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur IA");
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
+  async function handleAddSuggestedLine(line: SuggestedLine) {
+    const formData = new FormData();
+    formData.set("quoteId", q.id);
+    formData.set("type", line.type);
+    formData.set("description", line.description);
+    formData.set("quantity", String(line.quantity));
+    formData.set("unitPrice", String(line.unitPrice));
+    formData.set("vatRate", "20");
+    formData.set("discountPercent", "0");
+    await addQuoteLineAction({ success: false }, formData);
+    setSuggestedLines((prev) => prev.filter((l) => l !== line));
+    toast.success(`"${line.description}" ajoutée`);
+  }
+
+  async function handleAddAllSuggested() {
+    for (const line of suggestedLines) {
+      const formData = new FormData();
+      formData.set("quoteId", q.id);
+      formData.set("type", line.type);
+      formData.set("description", line.description);
+      formData.set("quantity", String(line.quantity));
+      formData.set("unitPrice", String(line.unitPrice));
+      formData.set("vatRate", "20");
+      formData.set("discountPercent", "0");
+      await addQuoteLineAction({ success: false }, formData);
+    }
+    setSuggestedLines([]);
+    toast.success("Toutes les lignes ajoutées");
   }
 
   return (
@@ -135,7 +187,18 @@ export function QuoteDetail({ data }: Props) {
 
       {/* Lignes */}
       <Card>
-        <CardHeader><CardTitle>Lignes du devis</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Lignes du devis</CardTitle>
+          {aiEnabled && isEditable && q.notes && lines.length === 0 && suggestedLines.length === 0 && (
+            <Button variant="outline" size="sm" onClick={handleSuggestLines} disabled={suggesting}>
+              {suggesting ? (
+                <><Loader2 className="h-3 w-3 animate-spin" /> Génération...</>
+              ) : (
+                <><Zap className="h-3 w-3" /> Générer les lignes</>
+              )}
+            </Button>
+          )}
+        </CardHeader>
         <CardContent className="space-y-3">
           {lines.length === 0 ? (
             <EmptyState icon={List} title="Aucune ligne" description="Ajoutez des pieces ou de la main d'oeuvre" className="py-4" />
@@ -158,6 +221,35 @@ export function QuoteDetail({ data }: Props) {
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Lignes suggérées par IA */}
+          {suggestedLines.length > 0 && (
+            <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-xs font-medium text-primary">
+                  <Zap className="h-3 w-3" /> Lignes suggérées par l&apos;IA
+                </span>
+                <Button size="sm" variant="default" onClick={handleAddAllSuggested}>
+                  Ajouter toutes
+                </Button>
+              </div>
+              {suggestNotes && <p className="text-xs text-muted-foreground">{suggestNotes}</p>}
+              {suggestedLines.map((line, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-background p-2">
+                  <Badge variant={line.type === "part" ? "secondary" : "default"}>
+                    {line.type === "part" ? "Pièce" : line.type === "labor" ? "MO" : "Autre"}
+                  </Badge>
+                  <span className="flex-1 text-sm">{line.description}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {line.quantity} × {formatCurrency(String(line.unitPrice))}
+                  </span>
+                  <Button size="sm" variant="outline" onClick={() => handleAddSuggestedLine(line)}>
+                    <Plus className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
             </div>
