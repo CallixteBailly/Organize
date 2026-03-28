@@ -21,6 +21,7 @@ export const vehicles = pgTable(
     engineType: varchar("engine_type", { length: 50 }),
     mileage: integer("mileage"),
     color: varchar("color", { length: 50 }),
+    kTypeId: integer("k_type_id"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
