@@ -1,5 +1,5 @@
 export interface CatalogConfig {
-  provider: "mock" | "tecdoc" | "histovec";
+  provider: "mock" | "tecdoc" | "histovec" | "largus";
   // TecDoc B2B
   tecdocApiKey: string | null;
   tecdocApiUrl: string;
@@ -15,7 +15,7 @@ export function getCatalogConfig(): CatalogConfig {
   if (_config) return _config;
 
   _config = {
-    provider: (process.env.CATALOG_PROVIDER as "mock" | "tecdoc" | "histovec") ?? "mock",
+    provider: (process.env.CATALOG_PROVIDER as "mock" | "tecdoc" | "histovec" | "largus") ?? "mock",
     tecdocApiKey: process.env.TECDOC_API_KEY ?? null,
     tecdocApiUrl:
       process.env.TECDOC_API_URL ??

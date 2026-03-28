@@ -16,7 +16,9 @@ import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory } from ".
 import { CatalogProviderError } from "../errors";
 import { MockCatalogProvider } from "./mock.provider";
 
-const HISTOVEC_API = "https://histovec.interieur.gouv.fr/api/v1";
+// Endpoints découverts : /public/v1/ (authentifié) et /histovec/api/v1/ (405 sur POST)
+// Accès officiel via agrément ANTS : histovec@interieur.gouv.fr
+const HISTOVEC_API = "https://histovec.interieur.gouv.fr/public/v1";
 
 // ─── Normalisation ─────────────────────────────────────────────────────────────
 
@@ -164,14 +166,46 @@ export class HistovecProvider implements IVehicleCatalogProvider {
         cache: "no-store",
       });
 
-      if (res.status === 404) return null;
+      // Détecte une réponse HTML (redirect vers page de login ou erreur nginx)
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("text/html")) {
+        throw new CatalogProviderError(
+          res.status === 401 || res.status === 403
+            ? "Histovec requiert un accès officiel ANTS. Contactez histovec@interieur.gouv.fr pour obtenir les credentials."
+            : `Histovec n'est pas accessible depuis ce serveur (${res.status}). Accès officiel requis via l'ANTS.`,
+        );
+      }
+
+      if (res.status === 401 || res.status === 403) {
+        throw new CatalogProviderError(
+          "Histovec requiert un accès officiel ANTS. Contactez histovec@interieur.gouv.fr.",
+        );
+      }
+
+      if (res.status === 404) {
+        // 404 sur l'endpoint = URL incorrecte (pas de véhicule introuvable)
+        // L'accès officiel ANTS est requis pour accéder à l'API Histovec
+        throw new CatalogProviderError(
+          "L'API Histovec n'est pas accessible sans agrément officiel ANTS. " +
+          "Contactez histovec@interieur.gouv.fr pour obtenir un accès professionnel.",
+        );
+      }
 
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new CatalogProviderError(`Histovec erreur ${res.status}: ${text.slice(0, 200)}`);
       }
 
-      const json = await res.json();
+      const raw = await res.text();
+
+      // Vérifie que la réponse est bien du JSON
+      if (raw.trimStart().startsWith("<")) {
+        throw new CatalogProviderError(
+          "Histovec a retourné une page HTML — accès officiel ANTS requis.",
+        );
+      }
+
+      const json = JSON.parse(raw) as unknown;
 
       if (process.env.NODE_ENV !== "production") {
         console.log("[Histovec raw response]", JSON.stringify(json, null, 2).slice(0, 3000));
@@ -183,7 +217,7 @@ export class HistovecProvider implements IVehicleCatalogProvider {
       if ((err as Error).name === "AbortError") {
         throw new CatalogProviderError("Délai dépassé — Histovec ne répond pas");
       }
-      throw new CatalogProviderError(`Erreur Histovec: ${(err as Error).message}`);
+      throw new CatalogProviderError(`Histovec inaccessible: ${(err as Error).message}`);
     } finally {
       clearTimeout(timeout);
     }

@@ -3,6 +3,7 @@ import { getCachedVehicle, setCachedVehicle, getCachedParts, setCachedParts } fr
 import { MockCatalogProvider } from "./providers/mock.provider";
 import { TecDocProvider } from "./providers/tecdoc.provider";
 import { HistovecProvider, type HistovecParams } from "./providers/histovec.provider";
+import { LargusProvider } from "./providers/largus.provider";
 import { CatalogDisabledError } from "./errors";
 import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory } from "./types";
 
@@ -22,7 +23,9 @@ function getProvider(): IVehicleCatalogProvider {
 
   const config = getCatalogConfig();
 
-  if (config.provider === "histovec") {
+  if (config.provider === "largus") {
+    _provider = new LargusProvider();
+  } else if (config.provider === "histovec") {
     _provider = new HistovecProvider();
   } else if (config.provider === "tecdoc") {
     _provider = new TecDocProvider(
@@ -48,6 +51,7 @@ export function resetProvider(): void {
 export async function resolvePlateWithCache(
   rawPlate: string,
   histovecParams?: HistovecParams,
+  clientIp?: string,
 ): Promise<CatalogVehicle | null> {
   const config = getCatalogConfig();
   if (!config.enabled) throw new CatalogDisabledError();
@@ -65,7 +69,9 @@ export async function resolvePlateWithCache(
   const vehicle =
     provider instanceof HistovecProvider
       ? await provider.resolveVehicleByPlate(plate, histovecParams)
-      : await provider.resolveVehicleByPlate(plate);
+      : provider instanceof LargusProvider
+        ? await (provider as LargusProvider).resolveVehicleByPlate(plate, clientIp)
+        : await provider.resolveVehicleByPlate(plate);
 
   if (vehicle) {
     await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);

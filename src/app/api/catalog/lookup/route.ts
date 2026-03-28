@@ -28,12 +28,19 @@ async function handler(req: NextRequest, ctx: AuthContext) {
   }
 
   // Paramètres Histovec (optionnels — ignorés en mode mock)
+  // IP réelle du navigateur — transmise à L'Argus pour que le quota s'applique
+  // à l'IP du garage, pas à l'IP de notre serveur
+  const clientIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    req.headers.get("x-real-ip") ??
+    undefined;
+
   const histovecParams = formule && nom
     ? { formule, nom, prenoms: prenoms ? prenoms.split(",") : undefined }
     : undefined;
 
   try {
-    const vehicle = await resolvePlateWithCache(plate, histovecParams);
+    const vehicle = await resolvePlateWithCache(plate, histovecParams, clientIp);
 
     if (!vehicle) {
       return NextResponse.json(
