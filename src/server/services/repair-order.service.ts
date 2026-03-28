@@ -93,7 +93,7 @@ export async function createRepairOrder(
   const nextNum = garage?.nextRepairOrderNumber ?? 1;
   const roNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx: any) => {
     const [ro] = await tx
       .insert(repairOrders)
       .values({
@@ -210,7 +210,7 @@ export async function recordSignature(garageId: string, roId: string, signatureD
 }
 
 export async function closeRepairOrder(garageId: string, roId: string, userId: string) {
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx: any) => {
     // Get the repair order with lines
     const [ro] = await tx
       .select()

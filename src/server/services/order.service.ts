@@ -61,7 +61,7 @@ export async function getOrderById(garageId: string, orderId: string) {
 }
 
 export async function createOrder(garageId: string, userId: string, data: CreateOrderInput) {
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx: any) => {
     const totalHt = data.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
     const orderNumber = `CMD-${Date.now().toString(36).toUpperCase()}`;
 

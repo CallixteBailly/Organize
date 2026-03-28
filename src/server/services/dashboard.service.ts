@@ -167,7 +167,7 @@ export async function getRevenueByDay(
     .groupBy(sql`to_char(${invoices.issueDate}, 'YYYY-MM-DD')`)
     .orderBy(sql`to_char(${invoices.issueDate}, 'YYYY-MM-DD')`);
 
-  return result.map((r) => ({ date: r.date, revenue: Number(r.revenue) }));
+  return result.map((r: { date: string; revenue: number }) => ({ date: r.date, revenue: Number(r.revenue) }));
 }
 
 // ── N vs N-1 comparison ──

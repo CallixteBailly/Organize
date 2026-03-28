@@ -74,7 +74,7 @@ export async function createQuote(garageId: string, userId: string, data: Create
   const nextNum = garage?.nextQuoteNumber ?? 1;
   const quoteNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx: any) => {
     const [quote] = await tx
       .insert(quotes)
       .values({
@@ -175,7 +175,7 @@ export async function convertQuoteToRepairOrder(
   const nextNum = garage?.nextRepairOrderNumber ?? 1;
   const roNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx: any) => {
     // Create repair order
     const [ro] = await tx
       .insert(repairOrders)
@@ -196,7 +196,7 @@ export async function convertQuoteToRepairOrder(
 
     // Copy lines
     if (quoteData.lines.length > 0) {
-      const lineValues = quoteData.lines.map((l) => ({
+      const lineValues = quoteData.lines.map((l: any) => ({
         repairOrderId: ro.id,
         type: l.type,
         stockItemId: l.stockItemId,

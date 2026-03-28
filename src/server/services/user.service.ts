@@ -7,7 +7,7 @@ import type { RegisterInput, CreateUserInput, UpdateUserInput } from "@/server/v
 export async function registerGarageAndOwner(data: RegisterInput) {
   const passwordHash = await bcryptjs.hash(data.password, 12);
 
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx: any) => {
     const [garage] = await tx
       .insert(garages)
       .values({
