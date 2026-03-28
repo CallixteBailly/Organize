@@ -1,61 +1,95 @@
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import {
+  getDashboardKPIs,
+  getRevenueByDay,
+  getRevenueComparison,
+  getDashboardAlerts,
+} from "@/server/services/dashboard.service";
 import { PageHeader } from "@/components/layouts/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Euro, Wrench, Package, FileText } from "lucide-react";
+import { RevenueChart } from "@/components/modules/dashboard/revenue-chart";
+import { ComparisonCard } from "@/components/modules/dashboard/comparison-card";
+import { AlertList } from "@/components/modules/dashboard/alert-list";
+import { Euro, Wrench, Package, FileText, ShoppingCart, Users } from "lucide-react";
+import { formatCurrency } from "@/lib/utils/format";
+import { hasPermission, type UserRole } from "@/lib/constants/roles";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const role = session.user.role as UserRole;
+  if (!hasPermission(role, "dashboard:view")) {
+    redirect("/repair-orders");
+  }
+
+  const garageId = session.user.garageId;
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const [kpis, revenueData, monthComparison, alerts] = await Promise.all([
+    getDashboardKPIs(garageId),
+    getRevenueByDay(garageId, thirtyDaysAgo, new Date()),
+    getRevenueComparison(garageId, "month"),
+    getDashboardAlerts(garageId),
+  ]);
+
   return (
     <div className="space-y-6">
       <PageHeader title="Dashboard" description="Vue d'ensemble de votre activite" />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* KPI Grid */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard
           title="CA du jour"
-          value="0,00 EUR"
+          value={formatCurrency(kpis.revenueToday)}
           icon={Euro}
-          trend={{ value: 0, label: "vs hier" }}
+        />
+        <StatCard
+          title="CA du mois"
+          value={formatCurrency(kpis.revenueMonth)}
+          icon={Euro}
         />
         <StatCard
           title="Interventions"
-          value="0"
+          value={String(kpis.interventionsInProgress)}
           icon={Wrench}
-          description="En cours aujourd'hui"
+          description={`${kpis.interventionsToday} aujourd'hui`}
+        />
+        <StatCard
+          title="Factures impayees"
+          value={String(kpis.pendingInvoices)}
+          icon={FileText}
+          description={formatCurrency(kpis.pendingInvoicesAmount)}
         />
         <StatCard
           title="Alertes stock"
-          value="0"
+          value={String(kpis.lowStockCount)}
           icon={Package}
-          description="Pieces sous le seuil"
         />
         <StatCard
-          title="Factures en attente"
-          value="0"
-          icon={FileText}
-          description="A envoyer ou impayees"
+          title="Clients"
+          value={String(kpis.totalCustomers)}
+          icon={Users}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Chiffre d&apos;affaires</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-              Graphique CA - Connectez une base de donnees pour voir les donnees
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Activite recente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-              Aucune activite recente
-            </div>
-          </CardContent>
-        </Card>
+      {/* Charts row */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <RevenueChart data={revenueData} title="CA des 30 derniers jours" />
+        </div>
+        <div className="space-y-4">
+          <ComparisonCard
+            title="CA mensuel vs N-1"
+            currentValue={monthComparison.currentPeriod}
+            previousValue={monthComparison.previousPeriod}
+            changePercent={monthComparison.changePercent}
+          />
+          <AlertList alerts={alerts} />
+        </div>
       </div>
     </div>
   );
