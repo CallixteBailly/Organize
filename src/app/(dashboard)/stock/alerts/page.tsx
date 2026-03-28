@@ -30,7 +30,7 @@ export default async function StockAlertsPage() {
         />
       ) : (
         <div className="space-y-2">
-          {alerts.map((item) => (
+          {alerts.map((item: { id: string; name: string; reference: string; brand: string | null; quantity: number; minQuantity: number; sellingPrice: string }) => (
             <Link key={item.id} href={`/stock/${item.id}`}>
               <Card className="transition-colors hover:bg-secondary/50">
                 <CardContent className="flex items-center gap-4 p-4">

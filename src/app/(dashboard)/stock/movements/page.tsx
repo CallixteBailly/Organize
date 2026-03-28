@@ -36,7 +36,7 @@ export default async function MovementsPage() {
         />
       ) : (
         <div className="space-y-2">
-          {movements.map(({ movement: m, itemName, itemReference, performerFirstName, performerLastName }) => {
+          {movements.map(({ movement: m, itemName, itemReference, performerFirstName, performerLastName }: { movement: { id: string; type: string; quantity: number; stockItemId: string; createdAt: Date }; itemName: string; itemReference: string; performerFirstName: string; performerLastName: string }) => {
             const config = typeConfig[m.type] ?? typeConfig.entry;
             const Icon = config.icon;
             return (
