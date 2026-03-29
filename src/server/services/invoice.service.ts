@@ -1,5 +1,5 @@
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type Transaction } from "@/lib/db";
 import {
   invoices,
   invoiceLines,
@@ -94,7 +94,7 @@ export async function createInvoice(
   const nextNum = garage?.nextInvoiceNumber ?? 1;
   const invoiceNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     const [invoice] = await tx
       .insert(invoices)
       .values({
@@ -159,7 +159,7 @@ export async function generateInvoiceFromRepairOrder(
 
   // Copy lines from OR to invoice
   if (roLines.length > 0) {
-    const lineValues = roLines.map((l: any) => {
+    const lineValues = roLines.map((l: typeof repairOrderLines.$inferSelect) => {
       const ht = Number(l.totalHt);
       const vatAmount = ht * (Number(l.vatRate) / 100);
       return {
@@ -224,7 +224,7 @@ export async function addInvoiceLine(garageId: string, data: InvoiceLineInput) {
 }
 
 export async function removeInvoiceLine(lineId: string, invoiceId: string, garageId: string) {
-  await db.delete(invoiceLines).where(eq(invoiceLines.id, lineId));
+  await db.delete(invoiceLines).where(and(eq(invoiceLines.id, lineId), eq(invoiceLines.invoiceId, invoiceId)));
   await recalculateInvoiceTotals(invoiceId, garageId);
 }
 
@@ -258,7 +258,7 @@ async function recalculateInvoiceTotals(invoiceId: string, garageId: string) {
 // ── Finalize (NF525) ──
 
 export async function finalizeInvoice(garageId: string, invoiceId: string) {
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     // Get the invoice
     const [invoice] = await tx
       .select()
@@ -317,7 +317,7 @@ export async function recordPayment(
   garageId: string,
   data: { invoiceId: string; amount: number; method: string; reference?: string; notes?: string },
 ) {
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     const [payment] = await tx
       .insert(payments)
       .values({
@@ -396,7 +396,7 @@ export async function generateFECExport(garageId: string, startDate: Date, endDa
     "Idevise",
   ].join("\t");
 
-  const lines = invoiceList.map((inv: any) => {
+  const lines = invoiceList.map((inv) => {
     return [
       "VE", // Journal code: Ventes
       "Journal des ventes",

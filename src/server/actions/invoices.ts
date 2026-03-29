@@ -9,6 +9,7 @@ import {
 import {
   createInvoice,
   generateInvoiceFromRepairOrder,
+  getInvoiceById,
   addInvoiceLine,
   removeInvoiceLine,
   finalizeInvoice,
@@ -101,6 +102,13 @@ export async function removeInvoiceLineAction(
   if (!session?.user) return { success: false, error: "Non authentifie" };
 
   try {
+    // Verify invoice is still a draft before allowing line removal (NF525 integrity)
+    const invoiceData = await getInvoiceById(session.user.garageId, invoiceId);
+    if (!invoiceData) return { success: false, error: "Facture introuvable" };
+    if (invoiceData.invoice.status !== "draft") {
+      return { success: false, error: "Impossible de modifier une facture finalisee" };
+    }
+
     await removeInvoiceLine(lineId, invoiceId, session.user.garageId);
     revalidatePath(`/invoices/${invoiceId}`);
     return { success: true };

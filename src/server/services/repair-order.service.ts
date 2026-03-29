@@ -1,5 +1,5 @@
 import { eq, and, sql, desc } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type Transaction } from "@/lib/db";
 import {
   repairOrders,
   repairOrderLines,
@@ -93,7 +93,7 @@ export async function createRepairOrder(
   const nextNum = garage?.nextRepairOrderNumber ?? 1;
   const roNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     const [ro] = await tx
       .insert(repairOrders)
       .values({
@@ -162,7 +162,7 @@ export async function addRepairOrderLine(garageId: string, data: RepairOrderLine
 }
 
 export async function removeRepairOrderLine(lineId: string, repairOrderId: string, garageId: string) {
-  await db.delete(repairOrderLines).where(eq(repairOrderLines.id, lineId));
+  await db.delete(repairOrderLines).where(and(eq(repairOrderLines.id, lineId), eq(repairOrderLines.repairOrderId, repairOrderId)));
   await recalculateRepairOrderTotals(repairOrderId, garageId);
 }
 
@@ -210,7 +210,7 @@ export async function recordSignature(garageId: string, roId: string, signatureD
 }
 
 export async function closeRepairOrder(garageId: string, roId: string, userId: string) {
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     // Get the repair order with lines
     const [ro] = await tx
       .select()

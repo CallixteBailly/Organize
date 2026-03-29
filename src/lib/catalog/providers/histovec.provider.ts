@@ -207,8 +207,8 @@ export class HistovecProvider implements IVehicleCatalogProvider {
 
       const json = JSON.parse(raw) as unknown;
 
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[Histovec raw response]", JSON.stringify(json, null, 2).slice(0, 3000));
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[Histovec raw response]", JSON.stringify(json, null, 2).slice(0, 3000));
       }
 
       return this.parseResponse(json, normalizedPlate, plate, formule);
@@ -239,8 +239,8 @@ export class HistovecProvider implements IVehicleCatalogProvider {
         const key = deriveKey(normalizedPlate, formule);
         const decrypted = decryptResponse(encrypted, key) as HistovecDecryptedReport;
 
-        if (process.env.NODE_ENV !== "production") {
-          console.log("[Histovec decrypted]", JSON.stringify(decrypted, null, 2).slice(0, 3000));
+        if (process.env.NODE_ENV === "development") {
+          console.debug("[Histovec decrypted]", JSON.stringify(decrypted, null, 2).slice(0, 3000));
         }
 
         const siv = decrypted?.vehicule ?? decrypted?.v;

@@ -1,5 +1,5 @@
 import { eq, and, sql, desc } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type Transaction } from "@/lib/db";
 import {
   quotes,
   quoteLines,
@@ -74,7 +74,7 @@ export async function createQuote(garageId: string, userId: string, data: Create
   const nextNum = garage?.nextQuoteNumber ?? 1;
   const quoteNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     const [quote] = await tx
       .insert(quotes)
       .values({
@@ -124,7 +124,7 @@ export async function addQuoteLine(garageId: string, data: QuoteLineInput) {
 }
 
 export async function removeQuoteLine(lineId: string, quoteId: string, garageId: string) {
-  await db.delete(quoteLines).where(eq(quoteLines.id, lineId));
+  await db.delete(quoteLines).where(and(eq(quoteLines.id, lineId), eq(quoteLines.quoteId, quoteId)));
   await recalculateQuoteTotals(quoteId, garageId);
 }
 
@@ -175,7 +175,7 @@ export async function convertQuoteToRepairOrder(
   const nextNum = garage?.nextRepairOrderNumber ?? 1;
   const roNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
 
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     // Create repair order
     const [ro] = await tx
       .insert(repairOrders)
@@ -196,7 +196,7 @@ export async function convertQuoteToRepairOrder(
 
     // Copy lines
     if (quoteData.lines.length > 0) {
-      const lineValues = quoteData.lines.map((l: any) => ({
+      const lineValues = quoteData.lines.map((l) => ({
         repairOrderId: ro.id,
         type: l.type,
         stockItemId: l.stockItemId,

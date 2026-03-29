@@ -143,7 +143,7 @@ describe("repairOrderLineSchema", () => {
 describe("signatureSchema", () => {
   it("accepts valid signature data URL", () => {
     const result = signatureSchema.safeParse({
-      signatureDataUrl: "data:image/png;base64,iVBORw0KGgo...",
+      signatureDataUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
     });
     expect(result.success).toBe(true);
   });

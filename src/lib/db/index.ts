@@ -38,3 +38,5 @@ export const db = new Proxy({} as ReturnType<typeof createDb>, {
 });
 
 export type Database = ReturnType<typeof createDb>;
+/** Transaction handle — same API surface as Database, usable inside db.transaction() callbacks */
+export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
