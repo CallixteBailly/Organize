@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
-// Validate required environment variables at build/start time
-const requiredEnvVars = ["DATABASE_URL", "AUTH_SECRET"] as const;
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar] && process.env.NODE_ENV === "production") {
-    throw new Error(`Variable d'environnement requise manquante : ${envVar}`);
+// Validate required environment variables at runtime only (not during Vercel build)
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
+  const requiredEnvVars = ["DATABASE_URL", "AUTH_SECRET"] as const;
+  for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+      throw new Error(`Variable d'environnement requise manquante : ${envVar}`);
+    }
   }
 }
 
