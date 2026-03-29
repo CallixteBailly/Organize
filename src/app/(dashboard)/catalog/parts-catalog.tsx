@@ -73,28 +73,42 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
                 {category.parts.map((part) => (
                   <div
                     key={part.articleId}
-                    className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between"
                   >
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      {/* Référence + marque */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-sm font-semibold text-foreground tracking-wide">
                           {part.reference}
                         </span>
-                        <span className="text-xs font-medium text-primary">{part.brand}</span>
+                        <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                          {part.brand}
+                        </span>
                       </div>
-                      <p className="mt-0.5 text-sm font-medium text-foreground">{part.name}</p>
+
+                      {/* Nom de la pièce */}
+                      <p className="text-sm font-medium text-foreground">{part.name}</p>
+
+                      {/* Specs techniques */}
                       {part.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-1">{part.description}</p>
+                        <p className="text-xs text-muted-foreground">{part.description}</p>
                       )}
+
+                      {/* Références OEM */}
                       {part.oemNumbers.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                           {part.oemNumbers.slice(0, 3).map((oem, i) => (
-                            <span key={i} className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-1 text-xs bg-muted/60 border border-border/50 px-2 py-0.5 rounded font-mono text-muted-foreground"
+                            >
                               {oem}
                             </span>
                           ))}
                           {part.oemNumbers.length > 3 && (
-                            <span className="text-xs text-muted-foreground">+{part.oemNumbers.length - 3}</span>
+                            <span className="text-xs font-medium text-muted-foreground">
+                              +{part.oemNumbers.length - 3}
+                            </span>
                           )}
                         </div>
                       )}
@@ -105,7 +119,7 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
                         <AddToRepairOrderForm part={part} repairOrderId={repairOrderId} />
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground shrink-0">
+                      <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
                         Prix à saisir
                       </span>
                     )}
