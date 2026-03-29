@@ -1,6 +1,11 @@
+import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
+import type { PgTransaction, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import type { TablesRelationalConfig } from "drizzle-orm";
 import * as schema from "./schema";
 
-function createDb() {
+type DbInstance = NeonHttpDatabase<typeof schema>;
+
+function createDb(): DbInstance {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is not set");
   }
@@ -17,13 +22,13 @@ function createDb() {
     const postgres = require("postgres");
     const { drizzle } = require("drizzle-orm/postgres-js");
     const sql = postgres(url);
-    return drizzle(sql, { schema });
+    return drizzle(sql, { schema }) as unknown as DbInstance;
   }
 }
 
-let _db: ReturnType<typeof createDb> | undefined;
+let _db: DbInstance | undefined;
 
-export function getDb() {
+export function getDb(): DbInstance {
   if (!_db) {
     _db = createDb();
   }
@@ -31,12 +36,12 @@ export function getDb() {
 }
 
 // Lazy getter for import convenience — accessed at request time, not at module load time
-export const db = new Proxy({} as ReturnType<typeof createDb>, {
+export const db = new Proxy({} as DbInstance, {
   get(_, prop) {
     return (getDb() as unknown as Record<string | symbol, unknown>)[prop];
   },
 });
 
-export type Database = ReturnType<typeof createDb>;
+export type Database = DbInstance;
 /** Transaction handle — same API surface as Database, usable inside db.transaction() callbacks */
-export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+export type Transaction = PgTransaction<PgQueryResultHKT, Record<string, unknown>, TablesRelationalConfig>;

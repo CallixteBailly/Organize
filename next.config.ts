@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 // Validate required environment variables at runtime only (not during Vercel build)
-if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE && !process.env.VERCEL) {
   const requiredEnvVars = ["DATABASE_URL", "AUTH_SECRET"] as const;
   for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
