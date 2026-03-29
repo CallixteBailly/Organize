@@ -84,12 +84,19 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
                       </div>
                       <p className="mt-0.5 text-sm font-medium text-foreground">{part.name}</p>
                       {part.description && (
-                        <p className="text-xs text-muted-foreground">{part.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{part.description}</p>
                       )}
                       {part.oemNumbers.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          OEM : {part.oemNumbers.join(", ")}
-                        </p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {part.oemNumbers.slice(0, 3).map((oem, i) => (
+                            <span key={i} className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">
+                              {oem}
+                            </span>
+                          ))}
+                          {part.oemNumbers.length > 3 && (
+                            <span className="text-xs text-muted-foreground">+{part.oemNumbers.length - 3}</span>
+                          )}
+                        </div>
                       )}
                     </div>
 

@@ -305,7 +305,7 @@ export class CustomApiProvider implements IVehicleCatalogProvider {
           ?.map((s) => `${s.name}: ${s.value}`)
           .slice(0, 3)
           .join(" — ") ?? null,
-        oemNumbers: article.oemNumbers?.map((o) => `${o.brand}: ${o.number}`) ?? [],
+        oemNumbers: (article.oemNumbers ?? []).slice(0, 5).map((o) => `${o.brand} ${o.number}`),
       };
 
       categoryMap.get(categoryName)!.push(part);
