@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { PlateSearchForm, type SearchParams } from "./plate-search-form";
 import { VehicleCard } from "./vehicle-card";
@@ -95,6 +95,15 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
     },
     [fetchParts],
   );
+
+  // Auto-recherche si une plaque est passée en URL (depuis un OR par exemple)
+  useEffect(() => {
+    if (initialPlate && !useHistovec) {
+      handleSearch({ plate: initialPlate });
+    }
+    // On veut juste lancer la recherche au montage — handleSearch est stable (useCallback)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-6">
