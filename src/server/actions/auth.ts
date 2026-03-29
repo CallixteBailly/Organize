@@ -30,6 +30,7 @@ export async function registerAction(
     await registerGarageAndOwner(parsed.data);
     return { success: true };
   } catch (error: unknown) {
+    console.error("[register] Registration failed:", error);
     const message =
       error instanceof Error && error.message.includes("unique")
         ? "Un garage avec ce SIRET ou un utilisateur avec cet email existe deja"
