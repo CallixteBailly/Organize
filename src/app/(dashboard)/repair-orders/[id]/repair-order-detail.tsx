@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
-import { Plus, Trash2, CheckCircle, List, Zap, Loader2 } from "lucide-react";
+import { Plus, Trash2, CheckCircle, List, Zap, Loader2, BookOpen } from "lucide-react";
+import Link from "next/link";
 import {
   addLineAction,
   removeLineAction,
@@ -146,6 +147,15 @@ export function RepairOrderDetail({ data }: Props) {
         {ro.mileageAtIntake && <span className="text-sm text-muted-foreground">{ro.mileageAtIntake.toLocaleString("fr-FR")} km</span>}
         {data.vehiclePlate && <span className="text-sm font-mono text-muted-foreground">{data.vehiclePlate}</span>}
         <div className="flex-1" />
+        {data.vehiclePlate && (
+          <Link
+            href={`/catalog?plate=${encodeURIComponent(data.vehiclePlate)}&roId=${ro.id}`}
+            className="inline-flex items-center justify-center gap-2 rounded-[var(--radius)] font-medium transition-colors border border-border bg-background hover:bg-secondary h-10 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <BookOpen className="h-4 w-4" />
+            Chercher pièces catalogue
+          </Link>
+        )}
         {isEditable && (
           <Button onClick={handleClose} disabled={closing}>
             {closing ? <Spinner className="h-4 w-4" /> : <><CheckCircle className="h-4 w-4" /> Cloturer l&apos;OR</>}

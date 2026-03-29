@@ -6,6 +6,7 @@ import {
   Wrench,
   Users,
   Settings,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import { hasPermission, type UserRole, type Permission } from "./roles";
@@ -34,17 +35,17 @@ export const mainNavItems: NavItem[] = [
     mobileVisible: true,
   },
   {
-    label: "Commandes",
-    href: "/orders",
-    icon: ShoppingCart,
-    permission: "orders:create",
-    mobileVisible: true,
-  },
-  {
     label: "Interventions",
     href: "/repair-orders",
     icon: Wrench,
     permission: "repair-orders:view",
+    mobileVisible: true,
+  },
+  {
+    label: "Catalogue",
+    href: "/catalog",
+    icon: BookOpen,
+    permission: "catalog:view",
     mobileVisible: true,
   },
   {
@@ -53,6 +54,13 @@ export const mainNavItems: NavItem[] = [
     icon: FileText,
     permission: "invoices:view",
     mobileVisible: true,
+  },
+  {
+    label: "Commandes",
+    href: "/orders",
+    icon: ShoppingCart,
+    permission: "orders:create",
+    mobileVisible: false,
   },
   {
     label: "Clients",
