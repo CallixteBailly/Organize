@@ -11,6 +11,74 @@
 import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory, CatalogPart } from "../types";
 import { CatalogProviderError } from "../errors";
 
+// ─── Mapping productType (EN) → nom FR ───────────────────────────────────────
+
+const PRODUCT_TYPE_FR: Record<string, string> = {
+  "Brake Pad Set, disc brake": "Jeu de plaquettes de frein",
+  "High Performance Brake Pad Set": "Jeu de plaquettes haute performance",
+  "Brake Disc": "Disque de frein",
+  "Brake Shoe Set": "Jeu de mâchoires de frein",
+  "Brake Caliper": "Étrier de frein",
+  "Brake Hose": "Flexible de frein",
+  "Oil Filter": "Filtre à huile",
+  "Air Filter": "Filtre à air",
+  "Filter, cabin air": "Filtre d'habitacle",
+  "Fuel Filter": "Filtre à carburant",
+  "Oil Dipstick": "Jauge à huile",
+  "Oil Cooler, engine oil": "Refroidisseur d'huile moteur",
+  "Rail, oil pump drive chain": "Rail de chaîne pompe à huile",
+  "Screw Plug, oil sump": "Bouchon de vidange",
+  "Timing Belt Kit": "Kit de distribution",
+  "Oil Pipe, charger": "Conduite d'huile turbo",
+  "Hydraulic Oil Additive": "Additif huile hydraulique",
+  "Spark Plug": "Bougie d'allumage",
+  "Ignition Cable Kit": "Kit de câbles d'allumage",
+  "Ignition Switch": "Contacteur d'allumage",
+  "Knock Sensor": "Capteur de cliquetis",
+  "Sensor, crankshaft pulse": "Capteur de vilebrequin",
+  "Oxygen Sensor": "Sonde lambda",
+  "Shock Absorber": "Amortisseur",
+  "Spring": "Ressort",
+  "Control/Trailing Arm, wheel suspension": "Bras de suspension",
+  "Mounting, control/trailing arm": "Silent-bloc de bras",
+  "Ball Joint": "Rotule de suspension",
+  "Tie Rod End": "Rotule de direction",
+  "Drive Shaft": "Arbre de transmission",
+  "Joint Kit, drive shaft": "Kit de soufflet de cardan",
+  "Clutch Kit": "Kit d'embrayage",
+  "Clutch Release Bearing": "Butée d'embrayage",
+  "Radiator, engine cooling": "Radiateur de refroidissement",
+  "Expansion Tank, coolant": "Vase d'expansion",
+  "Cap, coolant tank": "Bouchon de vase d'expansion",
+  "Coolant Flange": "Bride de liquide de refroidissement",
+  "Heat Exchanger, interior heating": "Radiateur de chauffage",
+  "Charger, charging (supercharged/turbocharged)": "Turbocompresseur",
+  "Charge Air Hose": "Durite d'air de suralimentation",
+  "Fastening Clamp, charge air hose": "Collier de durite turbo",
+  "Exhaust Pipe": "Tube d'échappement",
+  "Exhaust Pipe, universal": "Tube d'échappement universel",
+  "Exhaust System": "Système d'échappement",
+  "Rear Muffler": "Silencieux arrière",
+  "Mounting Kit, exhaust system": "Kit de fixation échappement",
+  "Link/Coupling Rod, stabiliser bar": "Biellette de barre stabilisatrice",
+  "Mounting, stabiliser bar": "Silent-bloc de barre stabilisatrice",
+  "Fastening Bolt, stabiliser bar": "Boulon de barre stabilisatrice",
+  "Starter": "Démarreur",
+  "Clock Spring, airbag": "Enrouleur d'airbag",
+  "Belt Tensioner, V-ribbed belt": "Tendeur de courroie accessoires",
+  "Deflection/Guide Pulley, V-ribbed belt": "Galet tendeur de courroie",
+  "Hydraulic Pump, steering": "Pompe de direction assistée",
+  "Gas Spring, boot/cargo area": "Vérin de coffre",
+  "Mounting, engine": "Support moteur",
+  "Rivet, drum brake lining": "Rivet de garniture de frein",
+  "Trailer Hitch": "Attelage remorque",
+};
+
+function translateProductType(productType: string | null): string {
+  if (!productType) return "Pièce";
+  return PRODUCT_TYPE_FR[productType] ?? productType;
+}
+
 // ─── Mapping productType (EN) → catégorie FR ─────────────────────────────────
 
 const PRODUCT_TYPE_TO_CATEGORY: Record<string, string> = {
@@ -231,7 +299,7 @@ export class CustomApiProvider implements IVehicleCatalogProvider {
       const part: CatalogPart = {
         articleId: String(article.id),
         reference: article.articleNumber,
-        name: article.productType ?? article.articleNumber,
+        name: translateProductType(article.productType),
         brand: article.supplier ?? "Inconnu",
         description: article.specifications
           ?.map((s) => `${s.name}: ${s.value}`)
