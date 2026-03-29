@@ -251,7 +251,7 @@ export function RepairOrderDetail({ data }: Props) {
                 </select>
                 <Input name="description" placeholder="Description *" required className="sm:col-span-3" />
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                 <Input name="reference" placeholder="Reference" />
                 <Input name="quantity" type="number" step="0.01" min="0.01" placeholder="Qte *" required />
                 <Input name="unitPrice" type="number" step="0.01" min="0" placeholder="Prix unit. *" required />

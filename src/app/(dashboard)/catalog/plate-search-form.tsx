@@ -86,7 +86,7 @@ export function PlateSearchForm({ defaultValue = "", loading, error, useHistovec
                 onChange={(e) => setFormule(e.target.value.toUpperCase())}
                 placeholder="Ex : 20140AB12345"
                 maxLength={15}
-                className="font-mono uppercase w-48"
+                className="font-mono uppercase w-full sm:w-48"
                 aria-label="Numéro de formule"
                 autoComplete="off"
               />
@@ -97,7 +97,7 @@ export function PlateSearchForm({ defaultValue = "", loading, error, useHistovec
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 placeholder="Ex : DUPONT"
-                className="uppercase w-48"
+                className="uppercase w-full sm:w-48"
                 aria-label="Nom du titulaire"
                 autoComplete="off"
               />

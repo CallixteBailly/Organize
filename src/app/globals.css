@@ -93,9 +93,18 @@ a,
 [role="button"] {
   min-height: 44px;
   min-width: 44px;
+  touch-action: manipulation;
 }
 
 /* Disable pull-to-refresh on mobile for PWA feel */
 html {
   overscroll-behavior: none;
+}
+
+/* Safe area insets for notched devices (iPhone X+, Android gesture nav) */
+@supports (padding: max(0px)) {
+  :root {
+    --safe-area-top: env(safe-area-inset-top);
+    --safe-area-bottom: env(safe-area-inset-bottom);
+  }
 }
