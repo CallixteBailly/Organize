@@ -4,6 +4,7 @@ import { MockCatalogProvider } from "./providers/mock.provider";
 import { TecDocProvider } from "./providers/tecdoc.provider";
 import { HistovecProvider, type HistovecParams } from "./providers/histovec.provider";
 import { LargusProvider } from "./providers/largus.provider";
+import { CustomApiProvider } from "./providers/custom-api.provider";
 import { CatalogDisabledError } from "./errors";
 import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory } from "./types";
 import {
@@ -21,41 +22,56 @@ function normalizePlate(plate: string): string {
   return plate.toUpperCase().replace(/[\s-]/g, "");
 }
 
-let _provider: IVehicleCatalogProvider | null = null;
+let _vehicleProvider: LargusProvider | HistovecProvider | null = null;
+let _partsProvider: IVehicleCatalogProvider | null = null;
 
-function getProvider(): IVehicleCatalogProvider {
-  if (_provider) return _provider;
-
+function getProviders(): {
+  vehicle: LargusProvider | HistovecProvider | MockCatalogProvider;
+  parts: IVehicleCatalogProvider;
+} {
   const config = getCatalogConfig();
 
-  if (config.provider === "largus") {
-    _provider = new LargusProvider();
-  } else if (config.provider === "histovec") {
-    _provider = new HistovecProvider();
-  } else if (config.provider === "tecdoc") {
-    _provider = new TecDocProvider(
-      config.tecdocApiKey ?? "",
-      config.tecdocApiUrl,
-      config.tecdocProviderId ?? "",
-    );
-  } else {
-    _provider = new MockCatalogProvider();
+  if (!_vehicleProvider) {
+    if (config.provider === "histovec") {
+      _vehicleProvider = new HistovecProvider();
+    } else {
+      _vehicleProvider = new LargusProvider();
+    }
   }
 
-  return _provider;
+  if (!_partsProvider) {
+    if (config.provider === "custom" || (config.customApiUrl && config.customApiKey)) {
+      _partsProvider = new CustomApiProvider(
+        config.customApiUrl ?? "http://72.62.179.53:4000",
+        config.customApiKey ?? "",
+      );
+    } else if (config.provider === "tecdoc") {
+      _partsProvider = new TecDocProvider(
+        config.tecdocApiKey ?? "",
+        config.tecdocApiUrl,
+        config.tecdocProviderId ?? "",
+      );
+    } else if (config.provider === "mock") {
+      _partsProvider = new MockCatalogProvider();
+    } else {
+      // largus / histovec → mock pour les pièces (L'Argus ne fournit pas de catalogue)
+      _partsProvider = new MockCatalogProvider();
+    }
+  }
+
+  return { vehicle: _vehicleProvider, parts: _partsProvider };
 }
 
 export function resetProvider(): void {
-  _provider = null;
+  _vehicleProvider = null;
+  _partsProvider = null;
 }
 
 /**
  * Résout une plaque en 3 niveaux :
  *   1. Redis        (24h)       — ultra-rapide
  *   2. plate_identity DB        — permanent, pas de quota
- *   3. API externe (L'Argus…)  — sauvegarde dans DB + Redis
- *
- * histovecParams requis si CATALOG_PROVIDER=histovec.
+ *   3. L'Argus API              — sauvegarde dans DB + Redis
  */
 export async function resolvePlateWithCache(
   rawPlate: string,
@@ -73,8 +89,6 @@ export async function resolvePlateWithCache(
   if (redisHit) return redisHit;
 
   // ── Niveau 2 : plate_identity (DB) ────────────────────────────────────────
-  // Uniquement pour les providers sans données personnelles (largus, mock)
-  // Histovec est lié à un titulaire spécifique → pas de cache global DB
   if (!histovecParams) {
     try {
       const dbRow = await getPlateIdentity(plate);
@@ -84,26 +98,21 @@ export async function resolvePlateWithCache(
         return vehicle;
       }
     } catch (err) {
-      console.warn("[catalog] plate_identity lookup échoué (DB indisponible?):", err);
-      // Non bloquant — on continue vers l'API externe
+      console.warn("[catalog] plate_identity lookup échoué:", err);
     }
   }
 
   // ── Niveau 3 : API externe ────────────────────────────────────────────────
-  const provider = getProvider();
+  const { vehicle: vehicleProvider } = getProviders();
 
   const vehicle =
-    provider instanceof HistovecProvider
-      ? await provider.resolveVehicleByPlate(plate, histovecParams)
-      : provider instanceof LargusProvider
-        ? await provider.resolveVehicleByPlate(plate, clientIp)
-        : await provider.resolveVehicleByPlate(plate);
+    vehicleProvider instanceof HistovecProvider
+      ? await vehicleProvider.resolveVehicleByPlate(plate, histovecParams)
+      : await vehicleProvider.resolveVehicleByPlate(plate, clientIp);
 
   if (vehicle) {
-    // Sauvegarde dans Redis
     await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);
 
-    // Sauvegarde dans plate_identity (sauf histovec — données liées à un titulaire)
     if (!histovecParams) {
       upsertPlateIdentity(plate, vehicle, config.provider).catch((err) => {
         console.error("[catalog] upsertPlateIdentity échoué:", err);
@@ -114,15 +123,29 @@ export async function resolvePlateWithCache(
   return vehicle;
 }
 
-export async function getPartsWithCache(kTypeId: number): Promise<CatalogCategory[]> {
+/**
+ * Récupère les pièces compatibles pour un véhicule.
+ * Le CustomApiProvider utilise make/model (depuis plate_identity) pour filtrer.
+ */
+export async function getPartsWithCache(
+  kTypeId: number,
+  make?: string,
+  model?: string,
+): Promise<CatalogCategory[]> {
   const config = getCatalogConfig();
   if (!config.enabled) throw new CatalogDisabledError();
 
+  // Clé de cache : par kTypeId (stable par véhicule)
   const cached = await getCachedParts(kTypeId);
   if (cached) return cached;
 
-  const provider = getProvider();
-  const categories = await provider.getPartsByVehicle(kTypeId);
+  const { parts } = getProviders();
+
+  // CustomApiProvider a besoin de make/model pour filtrer ses articles
+  const categories =
+    parts instanceof CustomApiProvider
+      ? await parts.getPartsByVehicle(kTypeId, make, model)
+      : await parts.getPartsByVehicle(kTypeId);
 
   if (categories.length > 0) {
     await setCachedParts(kTypeId, categories, config.cacheTtlParts);

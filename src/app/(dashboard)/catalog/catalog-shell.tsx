@@ -41,11 +41,15 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [partsError, setPartsError] = useState<string | null>(null);
 
-  const fetchParts = useCallback(async (kTypeId: number) => {
+  const fetchParts = useCallback(async (kTypeId: number, vehicleMake?: string, vehicleModel?: string) => {
     setPartsLoading(true);
     setPartsError(null);
     try {
-      const res = await fetch(`/api/catalog/parts?kTypeId=${kTypeId}`);
+      const url = new URL("/api/catalog/parts", window.location.origin);
+      url.searchParams.set("kTypeId", String(kTypeId));
+      if (vehicleMake) url.searchParams.set("make", vehicleMake);
+      if (vehicleModel) url.searchParams.set("model", vehicleModel);
+      const res = await fetch(url.toString());
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setPartsError(data.error ?? "Impossible de charger les pièces");
@@ -86,7 +90,7 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
         const data: LookupResponse = await res.json();
         setVehicle(data.vehicle);
         setLocalVehicle(data.localVehicle);
-        await fetchParts(data.vehicle.kTypeId);
+        await fetchParts(data.vehicle.kTypeId, data.vehicle.make, data.vehicle.model);
       } catch {
         setLookupError("Erreur réseau lors de la recherche");
       } finally {
