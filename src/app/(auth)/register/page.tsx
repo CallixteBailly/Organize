@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
@@ -15,6 +15,51 @@ const initialState: RegisterState = { success: false };
 export default function RegisterPage() {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
+  const [siretLoading, setSiretLoading] = useState(false);
+  const [siretError, setSiretError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const lookupSiret = useCallback(async () => {
+    const form = formRef.current;
+    if (!form) return;
+    const siret = new FormData(form).get("siret") as string;
+    if (!siret || siret.length !== 14) {
+      setSiretError("Saisissez les 14 chiffres du SIRET");
+      return;
+    }
+
+    setSiretLoading(true);
+    setSiretError(null);
+    try {
+      const res = await fetch(`/api/siret?q=${siret}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setSiretError(data.error ?? "Erreur lors de la recherche");
+        return;
+      }
+      // Auto-fill form fields
+      const fields: Record<string, string> = {
+        garageName: data.name,
+        address: data.address,
+        city: data.city,
+        postalCode: data.postalCode,
+        firstName: data.dirigeantFirstName,
+        lastName: data.dirigeantLastName,
+      };
+      for (const [name, value] of Object.entries(fields)) {
+        const input = form.elements.namedItem(name) as HTMLInputElement | null;
+        if (input && value) {
+          // Trigger React-compatible value change
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      }
+    } catch {
+      setSiretError("Impossible de contacter le service");
+    } finally {
+      setSiretLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (state.success) {
@@ -28,7 +73,7 @@ export default function RegisterPage() {
         <CardTitle>Creer votre compte</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="space-y-4">
+        <form ref={formRef} action={formAction} className="space-y-4">
           {state.error && (
             <div className="rounded-[var(--radius)] bg-destructive/10 p-3 text-sm text-destructive">
               {state.error}
@@ -37,18 +82,29 @@ export default function RegisterPage() {
 
           <p className="text-sm font-medium text-muted-foreground">Informations du garage</p>
 
+          <div className="flex gap-2">
+            <Input
+              name="siret"
+              placeholder="SIRET (14 chiffres)"
+              required
+              maxLength={14}
+              error={state.fieldErrors?.siret?.[0] ?? siretError ?? undefined}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 shrink-0"
+              disabled={siretLoading}
+              onClick={lookupSiret}
+            >
+              {siretLoading ? <Spinner className="h-4 w-4" /> : "Rechercher"}
+            </Button>
+          </div>
           <Input
             name="garageName"
             placeholder="Nom du garage"
             required
             error={state.fieldErrors?.garageName?.[0]}
-          />
-          <Input
-            name="siret"
-            placeholder="SIRET (14 chiffres)"
-            required
-            maxLength={14}
-            error={state.fieldErrors?.siret?.[0]}
           />
           <Input
             name="address"
