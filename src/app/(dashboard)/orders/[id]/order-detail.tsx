@@ -65,7 +65,7 @@ export function OrderDetail({ order }: Props) {
             <Badge variant={status.variant}>{status.label}</Badge>
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4 text-sm">
+        <CardContent className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div><span className="text-muted-foreground">Fournisseur:</span> {supplierName}</div>
           <div><span className="text-muted-foreground">Date:</span> {formatDate(o.createdAt)}</div>
           <div><span className="text-muted-foreground">Total HT:</span> {formatCurrency(o.totalHt)}</div>

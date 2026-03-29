@@ -14,8 +14,8 @@ export const invoiceLineSchema = z.object({
   stockItemId: z.uuid().optional().or(z.literal("")),
   reference: z.string().optional(),
   description: z.string().min(1, "Description requise"),
-  quantity: z.coerce.number().min(0.01, "Quantite requise"),
-  unitPrice: z.coerce.number().min(0, "Prix requis"),
+  quantity: z.coerce.number().min(0.01, "Quantite requise").max(999_999, "Quantite maximale depassee"),
+  unitPrice: z.coerce.number().min(0, "Prix requis").max(999_999.99, "Prix maximum depasse"),
   vatRate: z.coerce.number().min(0).max(100).default(20),
   discountPercent: z.coerce.number().min(0).max(100).default(0),
 });

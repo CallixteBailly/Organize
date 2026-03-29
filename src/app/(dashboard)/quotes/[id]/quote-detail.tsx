@@ -145,7 +145,7 @@ export function QuoteDetail({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* Totaux */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="text-center">
           <CardContent className="pt-4">
             <p className="text-sm text-muted-foreground">HT</p>

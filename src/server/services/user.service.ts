@@ -1,13 +1,13 @@
 import { eq, and } from "drizzle-orm";
 import bcryptjs from "bcryptjs";
-import { db } from "@/lib/db";
+import { db, type Transaction } from "@/lib/db";
 import { users, garages } from "@/lib/db/schema";
 import type { RegisterInput, CreateUserInput, UpdateUserInput } from "@/server/validators/user";
 
 export async function registerGarageAndOwner(data: RegisterInput) {
   const passwordHash = await bcryptjs.hash(data.password, 12);
 
-  return db.transaction(async (tx: any) => {
+  return db.transaction(async (tx: Transaction) => {
     const [garage] = await tx
       .insert(garages)
       .values({

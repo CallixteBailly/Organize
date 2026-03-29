@@ -115,8 +115,8 @@ export class LargusProvider implements IVehicleCatalogProvider {
 
       const json: LargusResponse = await res.json();
 
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[Largus raw]", JSON.stringify(json, null, 2));
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[Largus raw]", JSON.stringify(json, null, 2));
       }
 
       if (json.code === "ERROR-QUOTA") {

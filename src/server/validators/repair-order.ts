@@ -21,14 +21,17 @@ export const repairOrderLineSchema = z.object({
   stockItemId: z.uuid().optional().or(z.literal("")),
   reference: z.string().optional(),
   description: z.string().min(1, "Description requise"),
-  quantity: z.coerce.number().min(0.01, "Quantite requise"),
-  unitPrice: z.coerce.number().min(0, "Prix requis"),
+  quantity: z.coerce.number().min(0.01, "Quantite requise").max(999_999, "Quantite maximale depassee"),
+  unitPrice: z.coerce.number().min(0, "Prix requis").max(999_999.99, "Prix maximum depasse"),
   vatRate: z.coerce.number().min(0).max(100).default(20),
   discountPercent: z.coerce.number().min(0).max(100).default(0),
 });
 
 export const signatureSchema = z.object({
-  signatureDataUrl: z.string().min(1, "Signature requise"),
+  signatureDataUrl: z.string()
+    .min(1, "Signature requise")
+    .max(500_000, "Signature trop volumineuse (max 500 Ko)")
+    .regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, "Format de signature invalide"),
 });
 
 export type CreateRepairOrderInput = z.infer<typeof createRepairOrderSchema>;
