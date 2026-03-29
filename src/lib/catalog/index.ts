@@ -6,6 +6,11 @@ import { HistovecProvider, type HistovecParams } from "./providers/histovec.prov
 import { LargusProvider } from "./providers/largus.provider";
 import { CatalogDisabledError } from "./errors";
 import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory } from "./types";
+import {
+  getPlateIdentity,
+  upsertPlateIdentity,
+  plateIdentityToCatalogVehicle,
+} from "@/server/services/plate-identity.service";
 
 export * from "./types";
 export * from "./errors";
@@ -45,8 +50,12 @@ export function resetProvider(): void {
 }
 
 /**
- * Résout une plaque.
- * histovecParams requis si CATALOG_PROVIDER=histovec (formule + nom du titulaire).
+ * Résout une plaque en 3 niveaux :
+ *   1. Redis        (24h)       — ultra-rapide
+ *   2. plate_identity DB        — permanent, pas de quota
+ *   3. API externe (L'Argus…)  — sauvegarde dans DB + Redis
+ *
+ * histovecParams requis si CATALOG_PROVIDER=histovec.
  */
 export async function resolvePlateWithCache(
   rawPlate: string,
@@ -57,24 +66,49 @@ export async function resolvePlateWithCache(
   if (!config.enabled) throw new CatalogDisabledError();
 
   const plate = normalizePlate(rawPlate);
-
-  // Cache keyed par plaque + formule pour éviter les collisions entre véhicules différents
   const cacheKey = histovecParams?.formule ? `${plate}:${histovecParams.formule}` : plate;
-  const cached = await getCachedVehicle(cacheKey);
-  if (cached) return cached;
 
+  // ── Niveau 1 : Redis ──────────────────────────────────────────────────────
+  const redisHit = await getCachedVehicle(cacheKey);
+  if (redisHit) return redisHit;
+
+  // ── Niveau 2 : plate_identity (DB) ────────────────────────────────────────
+  // Uniquement pour les providers sans données personnelles (largus, mock)
+  // Histovec est lié à un titulaire spécifique → pas de cache global DB
+  if (!histovecParams) {
+    try {
+      const dbRow = await getPlateIdentity(plate);
+      if (dbRow) {
+        const vehicle = plateIdentityToCatalogVehicle(dbRow);
+        await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);
+        return vehicle;
+      }
+    } catch (err) {
+      console.warn("[catalog] plate_identity lookup échoué (DB indisponible?):", err);
+      // Non bloquant — on continue vers l'API externe
+    }
+  }
+
+  // ── Niveau 3 : API externe ────────────────────────────────────────────────
   const provider = getProvider();
 
-  // HistovecProvider accepte un second paramètre
   const vehicle =
     provider instanceof HistovecProvider
       ? await provider.resolveVehicleByPlate(plate, histovecParams)
       : provider instanceof LargusProvider
-        ? await (provider as LargusProvider).resolveVehicleByPlate(plate, clientIp)
+        ? await provider.resolveVehicleByPlate(plate, clientIp)
         : await provider.resolveVehicleByPlate(plate);
 
   if (vehicle) {
+    // Sauvegarde dans Redis
     await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);
+
+    // Sauvegarde dans plate_identity (sauf histovec — données liées à un titulaire)
+    if (!histovecParams) {
+      upsertPlateIdentity(plate, vehicle, config.provider).catch((err) => {
+        console.error("[catalog] upsertPlateIdentity échoué:", err);
+      });
+    }
   }
 
   return vehicle;

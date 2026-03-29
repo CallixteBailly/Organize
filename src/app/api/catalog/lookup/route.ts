@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthContext } from "@/server/middleware/with-auth";
 import { plateSearchSchema } from "@/server/validators/catalog";
 import { resolvePlateWithCache, CatalogDisabledError, CatalogProviderError, CatalogNotFoundError } from "@/lib/catalog";
-import { searchVehicleByPlate, enrichVehicleFromCatalog } from "@/server/services/vehicle.service";
+import { searchVehicleByPlate } from "@/server/services/vehicle.service";
 import { checkAIRateLimit } from "@/lib/ai/rate-limit";
 
 async function handler(req: NextRequest, ctx: AuthContext) {
@@ -51,15 +51,6 @@ async function handler(req: NextRequest, ctx: AuthContext) {
 
     const localVehicles = await searchVehicleByPlate(ctx.garageId, plate);
     const localVehicle = localVehicles[0] ?? null;
-
-    // Enrichissement silencieux : si le véhicule est déjà dans la DB du garage,
-    // on le met à jour avec les données L'Argus (marque, modèle, année, énergie, kTypeId)
-    // sans écraser ce que le mécanicien a déjà saisi.
-    if (localVehicle) {
-      enrichVehicleFromCatalog(ctx.garageId, localVehicle.id, vehicle).catch((err) => {
-        console.error("[catalog/lookup] enrichissement DB échoué:", err);
-      });
-    }
 
     return NextResponse.json({
       vehicle,

@@ -2,7 +2,6 @@ import { eq, and, or, ilike, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { vehicles } from "@/lib/db/schema";
 import type { CreateVehicleInput, UpdateVehicleInput } from "@/server/validators/vehicle";
-import type { CatalogVehicle } from "@/lib/catalog/types";
 
 export async function getVehiclesByCustomer(garageId: string, customerId: string) {
   return db
@@ -55,39 +54,6 @@ export async function createVehicle(garageId: string, data: CreateVehicleInput) 
     .values({ ...data, garageId })
     .returning();
   return vehicle;
-}
-
-/**
- * Enrichit un véhicule existant avec les données identifiées par L'Argus (ou autre provider).
- * Ne met à jour que les champs vides — ne remplace jamais une valeur déjà saisie par le garage.
- */
-export async function enrichVehicleFromCatalog(
-  garageId: string,
-  vehicleId: string,
-  catalog: CatalogVehicle,
-): Promise<void> {
-  const [existing] = await db
-    .select()
-    .from(vehicles)
-    .where(and(eq(vehicles.id, vehicleId), eq(vehicles.garageId, garageId)))
-    .limit(1);
-
-  if (!existing) return;
-
-  const patch: Partial<typeof vehicles.$inferInsert> = {};
-
-  if (!existing.brand && catalog.make) patch.brand = catalog.make;
-  if (!existing.model && catalog.model) patch.model = catalog.model;
-  if (!existing.year && catalog.year) patch.year = catalog.year;
-  if (!existing.engineType && catalog.fuelType) patch.engineType = catalog.fuelType;
-  if (!existing.kTypeId && catalog.kTypeId) patch.kTypeId = catalog.kTypeId;
-
-  if (Object.keys(patch).length === 0) return; // Rien à mettre à jour
-
-  await db
-    .update(vehicles)
-    .set({ ...patch, updatedAt: new Date() })
-    .where(and(eq(vehicles.id, vehicleId), eq(vehicles.garageId, garageId)));
 }
 
 export async function updateVehicle(

@@ -6,6 +6,7 @@ export * from "./garages";
 export * from "./users";
 export * from "./customers";
 export * from "./vehicles";
+export * from "./plate-identity";
 
 // Stock tables
 export * from "./stock-categories";
