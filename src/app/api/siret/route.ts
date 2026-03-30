@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     }
 
     data = await res.json();
-  } catch {
+  } catch (error) {
+    console.error("[siret] Lookup failed:", error);
     return NextResponse.json(
       { error: "Service de recherche indisponible" },
       { status: 502 },

@@ -30,7 +30,8 @@ export async function updateGarageAction(
     await updateGarage(session.user.garageId, parsed.data);
     revalidatePath("/settings/garage");
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error("[garage] Update failed:", error);
     return { success: false, error: "Erreur lors de la mise a jour" };
   }
 }
