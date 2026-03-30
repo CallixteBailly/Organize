@@ -19,7 +19,14 @@ export function AlertList({ alerts }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Alertes</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Alertes</CardTitle>
+          {alerts.length > 0 && (
+            <Badge variant={alerts.some((a) => a.severity === "critical") ? "destructive" : "warning"}>
+              {alerts.length}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {alerts.length === 0 ? (
@@ -30,24 +37,28 @@ export function AlertList({ alerts }: Props) {
             className="py-4"
           />
         ) : (
-          <div className="space-y-2">
+          <ul className="space-y-2" role="list">
             {alerts.map((alert, i) => (
-              <Link key={i} href={alert.link}>
-                <div className="flex items-center gap-3 rounded-[var(--radius)] border border-border p-3 transition-colors hover:bg-secondary/50">
+              <li key={i}>
+                <Link
+                  href={alert.link}
+                  className="flex items-center gap-3 rounded-[var(--radius)] border border-border p-3 transition-all duration-150 hover:bg-secondary/50 hover:shadow-[var(--shadow-xs)]"
+                >
                   <AlertTriangle
-                    className={`h-5 w-5 shrink-0 ${
+                    className={`h-4 w-4 shrink-0 ${
                       alert.severity === "critical" ? "text-destructive" : "text-warning"
                     }`}
+                    aria-hidden="true"
                   />
                   <span className="flex-1 text-sm">{alert.message}</span>
                   <Badge variant={alert.severity === "critical" ? "destructive" : "warning"}>
                     {alert.severity === "critical" ? "Critique" : "Attention"}
                   </Badge>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </Link>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </CardContent>
     </Card>

@@ -5,29 +5,34 @@
   --color-primary: #2563eb;
   --color-primary-foreground: #ffffff;
   --color-secondary: #f1f5f9;
-  --color-secondary-foreground: #0f172a;
+  --color-secondary-foreground: #1e293b;
 
   /* Semantic colors */
-  --color-background: #ffffff;
+  --color-background: #f8fafc;
   --color-foreground: #0f172a;
   --color-muted: #f1f5f9;
   --color-muted-foreground: #64748b;
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
   --color-border: #e2e8f0;
-  --color-input: #e2e8f0;
+  --color-input: #cbd5e1;
   --color-ring: #2563eb;
 
-  /* Status colors */
+  /* Status colors — all pass WCAG AA on white */
   --color-success: #15803d;
   --color-success-foreground: #ffffff;
-  --color-warning: #f59e0b;
-  --color-warning-foreground: #451a03;
+  --color-warning: #b45309;
+  --color-warning-foreground: #ffffff;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
 
   /* Radius */
-  --radius: 0.5rem;
+  --radius: 0.625rem;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,7 +49,7 @@
     --color-card: #1e293b;
     --color-card-foreground: #f8fafc;
     --color-border: #334155;
-    --color-input: #64748b;
+    --color-input: #475569;
     --color-ring: #3b82f6;
 
     --color-success: #22c55e;
@@ -52,6 +57,10 @@
     --color-warning: #fbbf24;
     --color-warning-foreground: #451a03;
     --color-destructive: #ef4444;
+
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.25), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
   }
 }
 
@@ -77,6 +86,10 @@
   --color-destructive-foreground: var(--color-destructive-foreground);
   --radius: var(--radius);
 
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -87,12 +100,21 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
-/* Mobile-first: ensure minimum touch targets */
+/* Mobile-first: ensure minimum touch targets for interactive elements */
 button,
-a,
-[role="button"] {
+[role="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="button"] {
+  touch-action: manipulation;
+}
+
+/* Inline links should NOT have min-height/min-width — only nav/standalone links */
+nav a,
+a[role="button"] {
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation;
@@ -111,6 +133,13 @@ html {
   }
 }
 
+/* Smooth transitions globally */
+*,
+*::before,
+*::after {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Respect user preference to reduce motion */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -120,4 +149,16 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Better focus outline for all focusable elements */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* Selection color */
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
 }

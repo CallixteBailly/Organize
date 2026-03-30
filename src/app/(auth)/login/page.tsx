@@ -44,49 +44,41 @@ function LoginForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Connexion</CardTitle>
+        <CardTitle className="text-center">Connexion</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {error && (
-            <div role="alert" className="rounded-[var(--radius)] bg-destructive/10 p-3 text-sm text-destructive">
+            <div role="alert" className="rounded-[var(--radius)] bg-destructive/10 p-3 text-sm font-medium text-destructive">
               {error}
             </div>
           )}
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-foreground">
-              Email
-            </label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="garage@exemple.fr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-foreground">
-              Mot de passe
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Input
+            id="email"
+            type="email"
+            label="Email"
+            placeholder="garage@exemple.fr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
+          <Input
+            id="password"
+            type="password"
+            label="Mot de passe"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+          />
+          <Button type="submit" className="mt-2 w-full" disabled={loading}>
             {loading ? <Spinner className="h-4 w-4" /> : "Se connecter"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             Pas encore de compte ?{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
-              Créer mon garage
+            <Link href="/register" className="font-medium text-primary hover:underline">
+              Creer mon garage
             </Link>
           </p>
         </form>

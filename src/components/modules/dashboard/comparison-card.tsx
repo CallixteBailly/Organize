@@ -27,28 +27,32 @@ export function ComparisonCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <p className="text-2xl font-bold text-foreground">{formatValue(currentValue)}</p>
+      <CardContent className="space-y-3">
+        <p className="text-2xl font-bold tracking-tight text-foreground">{formatValue(currentValue)}</p>
         <div className="flex items-center gap-2">
-          {isNeutral ? (
-            <Minus className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          ) : isPositive ? (
-            <TrendingUp className="h-4 w-4 text-success" aria-hidden="true" />
-          ) : (
-            <TrendingDown className="h-4 w-4 text-destructive" aria-hidden="true" />
-          )}
-          <span
+          <div
             className={cn(
-              "text-sm font-medium",
-              isNeutral ? "text-muted-foreground" : isPositive ? "text-success" : "text-destructive",
+              "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
+              isNeutral
+                ? "bg-secondary text-muted-foreground"
+                : isPositive
+                  ? "bg-success/10 text-success"
+                  : "bg-destructive/10 text-destructive",
             )}
           >
+            {isNeutral ? (
+              <Minus className="h-3 w-3" aria-hidden="true" />
+            ) : isPositive ? (
+              <TrendingUp className="h-3 w-3" aria-hidden="true" />
+            ) : (
+              <TrendingDown className="h-3 w-3" aria-hidden="true" />
+            )}
             <span aria-hidden="true">{isPositive ? "+" : ""}{changePercent}%</span>
             <span className="sr-only">{isNeutral ? "Stable" : isPositive ? `En hausse de ${changePercent}%` : `En baisse de ${Math.abs(changePercent)}%`}</span>
-          </span>
-          <span className="text-sm text-muted-foreground">vs N-1 ({formatValue(previousValue)})</span>
+          </div>
+          <span className="text-xs text-muted-foreground">vs N-1 ({formatValue(previousValue)})</span>
         </div>
       </CardContent>
     </Card>
