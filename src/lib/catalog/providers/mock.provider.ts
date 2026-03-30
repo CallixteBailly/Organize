@@ -27,7 +27,7 @@ const MOCK_CATEGORIES: CatalogCategory[] = [
         name: "Disque de frein avant",
         brand: "Delphi",
         description: "Disque frein avant ventilé, Ø 280mm",
-        oemNumbers: ["402064EA1A", "402067718R"],
+        oemNumbers: ["402064EA1A", "402067718R", "402064EA2B", "7701209821", "402067719R"],
       },
       {
         articleId: "mock-disque-ar",

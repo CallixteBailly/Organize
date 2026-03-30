@@ -31,7 +31,7 @@ function normalizePlate(plate: string): string {
   return plate.toUpperCase().replace(/[\s-]/g, "");
 }
 
-let _vehicleProvider: LargusProvider | HistovecProvider | null = null;
+let _vehicleProvider: LargusProvider | HistovecProvider | MockCatalogProvider | null = null;
 let _partsProvider: IVehicleCatalogProvider | null = null;
 
 function getProviders(): {
@@ -43,6 +43,8 @@ function getProviders(): {
   if (!_vehicleProvider) {
     if (config.provider === "histovec") {
       _vehicleProvider = new HistovecProvider();
+    } else if (config.provider === "mock") {
+      _vehicleProvider = new MockCatalogProvider();
     } else {
       _vehicleProvider = new LargusProvider();
     }
@@ -117,6 +119,8 @@ export async function resolvePlateWithCache(
   const vehicle =
     vehicleProvider instanceof HistovecProvider
       ? await vehicleProvider.resolveVehicleByPlate(plate, histovecParams)
+      : vehicleProvider instanceof MockCatalogProvider
+      ? await vehicleProvider.resolveVehicleByPlate(plate)
       : await vehicleProvider.resolveVehicleByPlate(plate, clientIp);
 
   if (vehicle) {

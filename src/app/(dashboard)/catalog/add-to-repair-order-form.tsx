@@ -32,25 +32,30 @@ export function AddToRepairOrderForm({ part, repairOrderId }: Props) {
       <input type="hidden" name="reference" value={part.reference} />
       <input type="hidden" name="brand" value={part.brand} />
       <input type="hidden" name="vatRate" value="20" />
-      <Input
-        name="quantity"
-        type="number"
-        min="1"
-        step="1"
-        defaultValue="1"
-        className="w-16 h-8 text-sm text-center"
-        aria-label="Quantité"
-      />
-      <Input
-        name="unitPrice"
-        type="number"
-        min="0"
-        step="0.01"
-        defaultValue="0"
-        className="w-24 h-8 text-sm"
-        placeholder="Prix €"
-        aria-label="Prix unitaire"
-      />
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-[10px] text-muted-foreground leading-none">Qté</span>
+        <Input
+          name="quantity"
+          type="number"
+          min="1"
+          step="1"
+          defaultValue="1"
+          className="w-16 h-8 text-sm text-center"
+          aria-label="Quantité"
+        />
+      </div>
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-[10px] text-muted-foreground leading-none">Prix HT €</span>
+        <Input
+          name="unitPrice"
+          type="number"
+          min="0"
+          step="0.01"
+          defaultValue="0"
+          className="w-24 h-8 text-sm"
+          aria-label="Prix unitaire"
+        />
+      </div>
       <Button type="submit" size="sm" disabled={pending} className="h-8 gap-1">
         {pending ? <Spinner className="size-3" /> : <Plus className="size-3" />}
         Ajouter

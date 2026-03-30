@@ -11,7 +11,7 @@ export default async function globalSetup() {
   const db = drizzle(sql, { schema });
 
   // Clean all tables in correct order (respecting FKs)
-  await db.execute(rawSql`TRUNCATE payments, invoice_lines, invoices, quote_lines, quotes, repair_order_lines, repair_orders, order_items, orders, supplier_catalog, suppliers, stock_movements, stock_items, stock_categories, vehicles, customers, users, garages CASCADE`);
+  await db.execute(rawSql`TRUNCATE payments, invoice_lines, invoices, quote_lines, quotes, repair_order_lines, repair_orders, order_items, orders, supplier_catalog, suppliers, stock_movements, stock_items, stock_categories, vehicles, customers, users, garages, plate_identity CASCADE`);
 
   // Seed test garage
   const [garage] = await db
@@ -30,14 +30,14 @@ export default async function globalSetup() {
   const passwordHash = await bcryptjs.hash("password123", 10);
 
   // Owner
-  await db.insert(schema.users).values({
+  const [owner] = await db.insert(schema.users).values({
     garageId: garage.id,
     email: "owner@test.fr",
     passwordHash,
     firstName: "Paul",
     lastName: "Gerant",
     role: "owner",
-  });
+  }).returning();
 
   // Mechanic
   await db.insert(schema.users).values({
@@ -88,7 +88,7 @@ export default async function globalSetup() {
   });
 
   // Vehicle
-  const [vehicle] = await db
+  await db
     .insert(schema.vehicles)
     .values({
       garageId: garage.id,
@@ -100,8 +100,7 @@ export default async function globalSetup() {
       engineType: "diesel",
       mileage: 32000,
       color: "Gris",
-    })
-    .returning();
+    });
 
   // Second vehicle
   await db.insert(schema.vehicles).values({
@@ -113,6 +112,32 @@ export default async function globalSetup() {
     year: 2019,
     engineType: "essence",
     mileage: 78000,
+  });
+
+  // Demo catalog vehicle (plate used by mock provider: Renault Clio IV 2018)
+  const [vehicleClio] = await db
+    .insert(schema.vehicles)
+    .values({
+      garageId: garage.id,
+      customerId: customer.id,
+      licensePlate: "FG533LT",
+      brand: "Renault",
+      model: "Clio",
+      year: 2018,
+      engineType: "essence",
+      mileage: 45000,
+    })
+    .returning();
+
+  // Repair order for catalog contextual flow tests
+  await db.insert(schema.repairOrders).values({
+    garageId: garage.id,
+    customerId: customer.id,
+    vehicleId: vehicleClio.id,
+    repairOrderNumber: "OR-E2E-001",
+    status: "in_progress",
+    createdBy: owner.id,
+    customerComplaint: "Bruit frein avant",
   });
 
   // Stock categories
