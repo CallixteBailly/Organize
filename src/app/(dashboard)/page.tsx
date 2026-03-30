@@ -41,59 +41,63 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" description="Vue d'ensemble de votre activite" />
+      <PageHeader title="Tableau de bord" description="Vue d'ensemble de votre activite" />
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard
-          title="CA du jour"
-          value={formatCurrency(kpis.revenueToday)}
-          icon={Euro}
-        />
-        <StatCard
-          title="CA du mois"
-          value={formatCurrency(kpis.revenueMonth)}
-          icon={Euro}
-        />
-        <StatCard
-          title="Interventions"
-          value={String(kpis.interventionsInProgress)}
-          icon={Wrench}
-          description={`${kpis.interventionsToday} aujourd'hui`}
-        />
-        <StatCard
-          title="Factures impayees"
-          value={String(kpis.pendingInvoices)}
-          icon={FileText}
-          description={formatCurrency(kpis.pendingInvoicesAmount)}
-        />
-        <StatCard
-          title="Alertes stock"
-          value={String(kpis.lowStockCount)}
-          icon={Package}
-        />
-        <StatCard
-          title="Clients"
-          value={String(kpis.totalCustomers)}
-          icon={Users}
-        />
-      </div>
-
-      {/* Charts row */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <RevenueChart data={revenueData} title="CA des 30 derniers jours" />
-        </div>
-        <div className="space-y-4">
-          <ComparisonCard
-            title="CA mensuel vs N-1"
-            currentValue={monthComparison.currentPeriod}
-            previousValue={monthComparison.previousPeriod}
-            changePercent={monthComparison.changePercent}
+      <section aria-labelledby="kpi-heading">
+        <h2 id="kpi-heading" className="sr-only">Indicateurs cles</h2>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+          <StatCard
+            title="CA du jour"
+            value={formatCurrency(kpis.revenueToday)}
+            icon={Euro}
           />
-          <AlertList alerts={alerts} />
+          <StatCard
+            title="CA du mois"
+            value={formatCurrency(kpis.revenueMonth)}
+            icon={Euro}
+          />
+          <StatCard
+            title="Interventions"
+            value={String(kpis.interventionsInProgress)}
+            icon={Wrench}
+            description={`${kpis.interventionsToday} aujourd'hui`}
+          />
+          <StatCard
+            title="Factures impayees"
+            value={String(kpis.pendingInvoices)}
+            icon={FileText}
+            description={formatCurrency(kpis.pendingInvoicesAmount)}
+          />
+          <StatCard
+            title="Alertes stock"
+            value={String(kpis.lowStockCount)}
+            icon={Package}
+          />
+          <StatCard
+            title="Clients"
+            value={String(kpis.totalCustomers)}
+            icon={Users}
+          />
         </div>
-      </div>
+      </section>
+
+      <section aria-labelledby="analytics-heading">
+        <h2 id="analytics-heading" className="sr-only">Analyse et alertes</h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <RevenueChart data={revenueData} title="CA des 30 derniers jours" />
+          </div>
+          <div className="space-y-4">
+            <ComparisonCard
+              title="CA mensuel vs N-1"
+              currentValue={monthComparison.currentPeriod}
+              previousValue={monthComparison.previousPeriod}
+              changePercent={monthComparison.changePercent}
+            />
+            <AlertList alerts={alerts} />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

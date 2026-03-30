@@ -13,13 +13,13 @@ interface StatCardProps {
 
 export function StatCard({ title, value, description, icon: Icon, trend, className }: StatCardProps) {
   return (
-    <Card className={cn("flex items-start gap-4", className)}>
-      <div className="rounded-lg bg-primary/10 p-2.5">
+    <Card className={cn("flex items-start gap-3", className)}>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius)] bg-primary/8">
         <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
       </div>
-      <div className="flex-1">
-        <p className="text-sm text-muted-foreground">{title}</p>
-        <p className="text-2xl font-bold text-card-foreground">{value}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
+        <p className="mt-0.5 text-xl font-bold tracking-tight text-card-foreground">{value}</p>
         {trend && (
           <p
             className={cn(

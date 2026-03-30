@@ -75,24 +75,24 @@ export default function RegisterPage() {
   return (
     <Card className="max-w-md">
       <CardHeader>
-        <h1 className="text-lg font-semibold text-card-foreground">Creer votre compte</h1>
+        <h1 className="text-center text-lg font-semibold tracking-tight text-card-foreground">Creer votre compte</h1>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction} className="space-y-4">
+        <form ref={formRef} action={formAction} className="space-y-5" noValidate>
           {state.error && (
-            <div role="alert" className="rounded-[var(--radius)] bg-destructive/10 p-3 text-sm text-destructive">
+            <div role="alert" className="rounded-[var(--radius)] bg-destructive/10 p-3 text-sm font-medium text-destructive">
               {state.error}
             </div>
           )}
 
-          <fieldset className="space-y-4 border-0 p-0 m-0">
-            <legend className="text-sm font-medium text-muted-foreground">Informations du garage</legend>
+          <fieldset className="space-y-3 border-0 p-0 m-0">
+            <legend className="mb-1 text-sm font-semibold text-foreground">Informations du garage</legend>
 
             <div className="flex gap-2">
               <Input
                 name="siret"
-                aria-label="SIRET"
-                placeholder="SIRET (14 chiffres)"
+                label="SIRET"
+                placeholder="14 chiffres"
                 required
                 maxLength={14}
                 error={state.fieldErrors?.siret?.[0] ?? siretError ?? undefined}
@@ -100,7 +100,7 @@ export default function RegisterPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 shrink-0"
+                className="mt-6 h-11 shrink-0"
                 disabled={siretLoading}
                 onClick={lookupSiret}
               >
@@ -108,22 +108,22 @@ export default function RegisterPage() {
               </Button>
             </div>
             {siretClosed && (
-              <div role="alert" className="rounded-[var(--radius)] bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+              <div role="alert" className="rounded-[var(--radius)] bg-warning/10 p-3 text-sm font-medium text-warning">
                 Cette entreprise est radiee ou fermee. Vous pouvez continuer l&apos;inscription si necessaire.
               </div>
             )}
             <Input
               name="garageName"
-              aria-label="Nom du garage"
-              placeholder="Nom du garage"
+              label="Nom du garage"
+              placeholder="Mon Garage Auto"
               required
               autoComplete="organization"
               error={state.fieldErrors?.garageName?.[0]}
             />
             <Input
               name="address"
-              aria-label="Adresse"
-              placeholder="Adresse"
+              label="Adresse"
+              placeholder="12 rue de la Republique"
               required
               autoComplete="street-address"
               error={state.fieldErrors?.address?.[0]}
@@ -131,16 +131,16 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               <Input
                 name="city"
-                aria-label="Ville"
-                placeholder="Ville"
+                label="Ville"
+                placeholder="Lyon"
                 required
                 autoComplete="address-level2"
                 error={state.fieldErrors?.city?.[0]}
               />
               <Input
                 name="postalCode"
-                aria-label="Code postal"
-                placeholder="Code postal"
+                label="Code postal"
+                placeholder="69001"
                 required
                 maxLength={5}
                 autoComplete="postal-code"
@@ -149,22 +149,24 @@ export default function RegisterPage() {
             </div>
           </fieldset>
 
-          <fieldset className="space-y-4 border-0 p-0 m-0 pt-2">
-            <legend className="text-sm font-medium text-muted-foreground">Votre compte</legend>
+          <div className="border-t border-border" role="separator" />
+
+          <fieldset className="space-y-3 border-0 p-0 m-0">
+            <legend className="mb-1 text-sm font-semibold text-foreground">Votre compte</legend>
 
             <div className="grid grid-cols-2 gap-3">
               <Input
                 name="firstName"
-                aria-label="Prenom"
-                placeholder="Prenom"
+                label="Prenom"
+                placeholder="Jean"
                 required
                 autoComplete="given-name"
                 error={state.fieldErrors?.firstName?.[0]}
               />
               <Input
                 name="lastName"
-                aria-label="Nom"
-                placeholder="Nom"
+                label="Nom"
+                placeholder="Dupont"
                 required
                 autoComplete="family-name"
                 error={state.fieldErrors?.lastName?.[0]}
@@ -173,8 +175,8 @@ export default function RegisterPage() {
             <Input
               name="email"
               type="email"
-              aria-label="Email"
-              placeholder="Email"
+              label="Email"
+              placeholder="jean@mongarage.fr"
               required
               autoComplete="email"
               error={state.fieldErrors?.email?.[0]}
@@ -182,8 +184,8 @@ export default function RegisterPage() {
             <Input
               name="password"
               type="password"
-              aria-label="Mot de passe"
-              placeholder="Mot de passe (min. 8 caracteres)"
+              label="Mot de passe"
+              placeholder="Min. 8 caracteres"
               required
               autoComplete="new-password"
               error={state.fieldErrors?.password?.[0]}
@@ -191,21 +193,21 @@ export default function RegisterPage() {
             <Input
               name="confirmPassword"
               type="password"
-              aria-label="Confirmer le mot de passe"
-              placeholder="Confirmer le mot de passe"
+              label="Confirmer le mot de passe"
+              placeholder="Retapez le mot de passe"
               required
               autoComplete="new-password"
               error={state.fieldErrors?.confirmPassword?.[0]}
             />
           </fieldset>
 
-          <Button type="submit" className="mt-4 w-full" disabled={isPending}>
+          <Button type="submit" className="mt-2 w-full" disabled={isPending}>
             {isPending ? <Spinner className="h-4 w-4" /> : "Creer mon garage"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
             Deja un compte ?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="font-medium text-primary hover:underline">
               Se connecter
             </Link>
           </p>

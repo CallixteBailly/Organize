@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useParams } from "next/navigation";
-import { MessageCircle } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAI } from "@/components/ai/ai-provider";
 import { ChatPanel } from "./chat-panel";
@@ -52,17 +52,17 @@ export function ChatFAB() {
         onClick={() => setOpen(true)}
         aria-label="Ouvrir l'assistant IA"
         className={cn(
-          // Mobile : au-dessus du FAB Quick Capture
-          "fixed bottom-36 right-4 z-40",
-          // Desktop : à gauche du FAB Quick Capture
-          "lg:bottom-6 lg:right-20",
+          // Mobile : au-dessus de la navigation mobile
+          "fixed bottom-20 right-4 z-40",
+          // Desktop : coin bas-droit standard
+          "lg:bottom-6 lg:right-6",
           "flex h-14 w-14 items-center justify-center rounded-full",
-          "bg-secondary text-secondary-foreground shadow-lg",
+          "bg-primary text-primary-foreground shadow-lg",
           "transition-transform active:scale-95",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         )}
       >
-        <MessageCircle className="h-6 w-6" />
+        <Sparkles className="h-6 w-6" />
       </button>
 
       <ChatPanel

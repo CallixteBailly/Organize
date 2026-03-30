@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
-import { Plus, Trash2, CheckCircle, List, Zap, Loader2, BookOpen } from "lucide-react";
+import { Plus, Trash2, CheckCircle, List, Zap, Loader2, BookOpen, Sparkles } from "lucide-react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   addLineAction,
   removeLineAction,
@@ -61,6 +63,22 @@ interface Props {
     vehiclePlate: string | null;
   };
 }
+
+const diagnosticMarkdownComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
+  p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+  ul: ({ children }) => <ul className="mb-2 ml-1 list-none space-y-1 last:mb-0">{children}</ul>,
+  ol: ({ children }) => <ol className="mb-2 ml-1 list-decimal list-inside space-y-1 last:mb-0">{children}</ol>,
+  li: ({ children }) => (
+    <li className="flex gap-2">
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" aria-hidden="true" />
+      <span>{children}</span>
+    </li>
+  ),
+  h1: ({ children }) => <p className="mb-1 text-sm font-bold text-foreground">{children}</p>,
+  h2: ({ children }) => <p className="mb-1 text-sm font-bold text-foreground">{children}</p>,
+  h3: ({ children }) => <p className="mb-0.5 text-sm font-semibold text-foreground">{children}</p>,
+};
 
 const addLineInitial: RepairOrderActionState = { success: false };
 
@@ -188,11 +206,15 @@ export function RepairOrderDetail({ data }: Props) {
               </div>
             )}
             {suggestedDiagnosis && !ro.diagnosis && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-primary">
-                  <Zap className="h-3 w-3" /> Diagnostic suggéré par l&apos;IA
+              <div className="rounded-[var(--radius)] border border-primary/20 bg-primary/5 p-4">
+                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Diagnostic suggere par l&apos;IA
                 </div>
-                <div className="whitespace-pre-line text-sm">{suggestedDiagnosis}</div>
+                <div className="text-sm text-card-foreground">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={diagnosticMarkdownComponents}>
+                    {suggestedDiagnosis}
+                  </ReactMarkdown>
+                </div>
               </div>
             )}
             {ro.diagnosis && <div><strong>Diagnostic :</strong> {ro.diagnosis}</div>}
