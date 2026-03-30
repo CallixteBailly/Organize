@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getStockItems, getCategories } from "@/server/services/stock.service";
 import { PageHeader } from "@/components/layouts/page-header";
 import { StockList } from "./stock-list";
+
+export const metadata: Metadata = { title: "Stock" };
 
 interface Props {
   searchParams: Promise<{ q?: string; page?: string; category?: string; lowStock?: string }>;

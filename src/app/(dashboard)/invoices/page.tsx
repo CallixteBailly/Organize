@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getInvoices } from "@/server/services/invoice.service";
 import { PageHeader } from "@/components/layouts/page-header";
 import { InvoiceList } from "./invoice-list";
+
+export const metadata: Metadata = { title: "Factures" };
 
 interface Props {
   searchParams: Promise<{ page?: string }>;

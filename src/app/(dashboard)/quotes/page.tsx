@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getQuotes } from "@/server/services/quote.service";
@@ -6,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { QuoteList } from "./quote-list";
+
+export const metadata: Metadata = { title: "Devis" };
 
 interface Props {
   searchParams: Promise<{ page?: string }>;

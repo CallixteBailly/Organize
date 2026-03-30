@@ -17,7 +17,7 @@ export function MobileNav() {
     .slice(0, 5);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
+    <nav aria-label="Navigation mobile" className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
       <div className="flex items-center justify-around">
         {mobileItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -25,13 +25,14 @@ export function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center gap-1 px-3 py-3 text-xs font-medium transition-colors",
                 "min-h-[56px] min-w-[56px]",
                 isActive ? "text-primary" : "text-muted-foreground",
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-5 w-5" aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
           );

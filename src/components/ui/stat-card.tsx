@@ -15,7 +15,7 @@ export function StatCard({ title, value, description, icon: Icon, trend, classNa
   return (
     <Card className={cn("flex items-start gap-4", className)}>
       <div className="rounded-lg bg-primary/10 p-2.5">
-        <Icon className="h-5 w-5 text-primary" />
+        <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
       </div>
       <div className="flex-1">
         <p className="text-sm text-muted-foreground">{title}</p>
@@ -27,8 +27,13 @@ export function StatCard({ title, value, description, icon: Icon, trend, classNa
               trend.value >= 0 ? "text-success" : "text-destructive",
             )}
           >
-            {trend.value >= 0 ? "+" : ""}
-            {trend.value}% {trend.label}
+            <span aria-hidden="true">
+              {trend.value >= 0 ? "+" : ""}
+              {trend.value}% {trend.label}
+            </span>
+            <span className="sr-only">
+              {trend.value >= 0 ? "En hausse de" : "En baisse de"} {Math.abs(trend.value)}% {trend.label}
+            </span>
           </p>
         )}
         {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}

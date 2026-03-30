@@ -207,8 +207,8 @@ export function InvoiceDetail({ data, userRole }: Props) {
                     <p className="font-bold">{formatCurrency(line.totalHt)} HT</p>
                   </div>
                   {isDraft && (
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveLine(line.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveLine(line.id)} aria-label={`Supprimer ${line.description}`}>
+                      <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                     </Button>
                   )}
                 </div>
@@ -265,19 +265,19 @@ export function InvoiceDetail({ data, userRole }: Props) {
 
       {/* Payment dialog */}
       {showPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="payment-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-sm">
-            <CardHeader><CardTitle>Enregistrer un paiement</CardTitle></CardHeader>
+            <CardHeader><CardTitle id="payment-title">Enregistrer un paiement</CardTitle></CardHeader>
             <CardContent>
               <form action={paymentFormAction} className="space-y-4">
                 <input type="hidden" name="invoiceId" value={inv.id} />
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Montant</label>
-                  <Input name="amount" type="number" step="0.01" min="0.01" defaultValue={remaining.toFixed(2)} required />
+                  <label htmlFor="payment-amount" className="text-sm font-medium">Montant</label>
+                  <Input id="payment-amount" name="amount" type="number" step="0.01" min="0.01" defaultValue={remaining.toFixed(2)} required />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Methode</label>
-                  <select name="method" required className="flex h-12 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-base">
+                  <label htmlFor="payment-method" className="text-sm font-medium">Methode</label>
+                  <select id="payment-method" name="method" required className="flex h-12 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-base">
                     <option value="card">Carte bancaire</option>
                     <option value="cash">Especes</option>
                     <option value="bank_transfer">Virement</option>
@@ -287,7 +287,7 @@ export function InvoiceDetail({ data, userRole }: Props) {
                 </div>
                 <Input name="reference" placeholder="Reference (optionnel)" />
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setShowPayment(false)}>Annuler</Button>
+                  <Button type="button" variant="outline" onClick={() => setShowPayment(false)} aria-label="Annuler le paiement">Annuler</Button>
                   <Button type="submit" disabled={paymentPending}>
                     {paymentPending ? <Spinner className="h-4 w-4" /> : "Enregistrer"}
                   </Button>

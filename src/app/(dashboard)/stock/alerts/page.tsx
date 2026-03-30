@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getLowStockAlerts } from "@/server/services/stock.service";
@@ -8,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
+
+export const metadata: Metadata = { title: "Alertes stock" };
 
 export default async function StockAlertsPage() {
   const session = await auth();

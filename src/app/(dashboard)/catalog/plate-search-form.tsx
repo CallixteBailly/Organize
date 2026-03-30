@@ -88,6 +88,7 @@ export function PlateSearchForm({ defaultValue = "", loading, error, useHistovec
                 maxLength={15}
                 className="font-mono uppercase w-full sm:w-48"
                 aria-label="Numéro de formule"
+                required
                 autoComplete="off"
               />
             </div>
@@ -99,6 +100,7 @@ export function PlateSearchForm({ defaultValue = "", loading, error, useHistovec
                 placeholder="Ex : DUPONT"
                 className="uppercase w-full sm:w-48"
                 aria-label="Nom du titulaire"
+                required
                 autoComplete="off"
               />
             </div>

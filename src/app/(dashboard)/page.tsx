@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import {
@@ -14,6 +15,8 @@ import { AlertList } from "@/components/modules/dashboard/alert-list";
 import { Euro, Wrench, Package, FileText, ShoppingCart, Users } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
 import { hasPermission, type UserRole } from "@/lib/constants/roles";
+
+export const metadata: Metadata = { title: "Tableau de bord" };
 
 export default async function DashboardPage() {
   const session = await auth();

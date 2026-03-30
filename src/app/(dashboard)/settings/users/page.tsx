@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getUsersByGarage } from "@/server/services/user.service";
 import { PageHeader } from "@/components/layouts/page-header";
 import { UsersList } from "./users-list";
+
+export const metadata: Metadata = { title: "Utilisateurs" };
 
 export default async function UsersSettingsPage() {
   const session = await auth();

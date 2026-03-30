@@ -10,7 +10,7 @@ export function Topbar() {
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
       <div className="flex items-center gap-2 lg:hidden">
-        <Wrench className="h-6 w-6 text-primary" />
+        <Wrench className="h-6 w-6 text-primary" aria-hidden="true" />
         <span className="text-lg font-bold text-foreground">Organize</span>
       </div>
       <div className="hidden lg:block" />
@@ -19,7 +19,7 @@ export function Topbar() {
           <>
             <div className="hidden items-center gap-2 sm:flex">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <User className="h-4 w-4 text-primary" />
+                <User className="h-4 w-4 text-primary" aria-hidden="true" />
               </div>
               <span className="text-sm font-medium text-foreground">{session.user.name}</span>
             </div>

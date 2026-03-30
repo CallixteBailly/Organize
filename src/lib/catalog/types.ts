@@ -28,7 +28,15 @@ export interface CatalogLookupResult {
   categories: CatalogCategory[];
 }
 
+export interface VehicleModelSearchParams {
+  make: string;
+  model: string;
+  year?: number;
+  fuelType?: string;
+}
+
 export interface IVehicleCatalogProvider {
   resolveVehicleByPlate(plate: string): Promise<CatalogVehicle | null>;
   getPartsByVehicle(kTypeId: number): Promise<CatalogCategory[]>;
+  searchVehiclesByModel?(params: VehicleModelSearchParams): Promise<CatalogVehicle[]>;
 }

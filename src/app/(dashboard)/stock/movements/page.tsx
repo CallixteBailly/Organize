@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getRecentMovements } from "@/server/services/stock.service";
@@ -7,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowDownCircle, ArrowUpCircle, RefreshCw, RotateCcw, Package } from "lucide-react";
 import { formatDateTime } from "@/lib/utils/format";
+
+export const metadata: Metadata = { title: "Mouvements stock" };
 
 const typeConfig: Record<string, { label: string; icon: typeof ArrowUpCircle; color: string }> = {
   entry: { label: "Entree", icon: ArrowDownCircle, color: "text-success" },

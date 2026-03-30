@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/layouts/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Users, Truck, ChevronRight } from "lucide-react";
+
+export const metadata: Metadata = { title: "Parametres" };
 
 const settingsLinks = [
   {

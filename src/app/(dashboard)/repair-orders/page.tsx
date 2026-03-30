@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getRepairOrders } from "@/server/services/repair-order.service";
@@ -6,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { RepairOrderList } from "./repair-order-list";
+
+export const metadata: Metadata = { title: "Ordres de reparation" };
 
 interface Props {
   searchParams: Promise<{ page?: string }>;

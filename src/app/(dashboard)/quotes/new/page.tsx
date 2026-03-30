@@ -87,12 +87,13 @@ export default function NewQuotePage() {
                 <Button type="button" variant="outline" size="sm" onClick={() => setSelectedCustomer(null)}>Changer</Button>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Valide jusqu&apos;au</label>
-                <Input name="validUntil" type="date" />
+                <label htmlFor="quote-valid-until" className="text-sm font-medium">Valide jusqu&apos;au</label>
+                <Input id="quote-valid-until" name="validUntil" type="date" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Notes</label>
+                <label htmlFor="quote-notes" className="text-sm font-medium">Notes</label>
                 <textarea
+                  id="quote-notes"
                   name="notes"
                   rows={2}
                   className="flex w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-base placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

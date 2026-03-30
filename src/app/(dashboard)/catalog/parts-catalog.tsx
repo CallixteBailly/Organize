@@ -42,8 +42,7 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
     <div className="space-y-2">
       {!repairOrderId && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-          Pour ajouter des pièces à un ordre de réparation, ouvrez le catalogue depuis une
-          intervention (lien "Chercher pièces catalogue" dans l'OR).
+          💡 Pour commander une pièce, ouvrez ce catalogue depuis une intervention.
         </p>
       )}
       {categories.map((category) => {
@@ -75,38 +74,39 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
                     key={part.articleId}
                     className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between"
                   >
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      {/* Référence + marque */}
+                    <div className="min-w-0 flex-1 space-y-1">
+                      {/* Nom de la pièce — info principale */}
+                      <p className="font-semibold text-foreground leading-snug">{part.name}</p>
+
+                      {/* Marque + référence de commande */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-sm font-semibold text-foreground tracking-wide">
-                          {part.reference}
-                        </span>
-                        <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                        <span className="text-xs font-bold text-primary uppercase tracking-wider">
                           {part.brand}
                         </span>
+                        <span className="font-mono text-sm font-semibold text-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+                          {part.reference}
+                        </span>
                       </div>
-
-                      {/* Nom de la pièce */}
-                      <p className="text-sm font-medium text-foreground">{part.name}</p>
 
                       {/* Specs techniques */}
                       {part.description && (
                         <p className="text-xs text-muted-foreground">{part.description}</p>
                       )}
 
-                      {/* Références OEM */}
+                      {/* Références constructeur */}
                       {part.oemNumbers.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          <span className="text-xs text-muted-foreground">N° origine :</span>
                           {part.oemNumbers.slice(0, 3).map((oem, i) => (
                             <span
                               key={i}
-                              className="inline-flex items-center gap-1 text-xs bg-muted/60 border border-border/50 px-2 py-0.5 rounded font-mono text-muted-foreground"
+                              className="inline-flex items-center text-xs bg-muted/60 border border-border/50 px-2 py-0.5 rounded font-mono text-muted-foreground"
                             >
                               {oem}
                             </span>
                           ))}
                           {part.oemNumbers.length > 3 && (
-                            <span className="text-xs font-medium text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               +{part.oemNumbers.length - 3}
                             </span>
                           )}
@@ -114,14 +114,10 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
                       )}
                     </div>
 
-                    {repairOrderId ? (
+                    {repairOrderId && (
                       <div className="shrink-0">
                         <AddToRepairOrderForm part={part} repairOrderId={repairOrderId} />
                       </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
-                        Prix à saisir
-                      </span>
                     )}
                   </div>
                 ))}

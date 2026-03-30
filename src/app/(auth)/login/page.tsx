@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -19,7 +20,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -48,7 +49,7 @@ function LoginForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-[var(--radius)] bg-destructive/10 p-3 text-sm text-destructive">
+            <div role="alert" className="rounded-[var(--radius)] bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -82,6 +83,12 @@ function LoginForm() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Spinner className="h-4 w-4" /> : "Se connecter"}
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            Pas encore de compte ?{" "}
+            <Link href="/register" className="text-primary hover:underline font-medium">
+              Créer mon garage
+            </Link>
+          </p>
         </form>
       </CardContent>
     </Card>
