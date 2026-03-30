@@ -1,4 +1,4 @@
-import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory } from "../types";
+import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory, VehicleModelSearchParams } from "../types";
 
 const MOCK_CATEGORIES: CatalogCategory[] = [
   {
@@ -207,6 +207,14 @@ function normalizePlate(plate: string): string {
   return plate.toUpperCase().replace(/[\s-]/g, "");
 }
 
+function normalizeForMatch(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 function plateToKTypeId(plate: string): number {
   const normalized = normalizePlate(plate);
   let hash = 0;
@@ -247,5 +255,29 @@ export class MockCatalogProvider implements IVehicleCatalogProvider {
 
   async getPartsByVehicle(_kTypeId: number): Promise<CatalogCategory[]> {
     return MOCK_CATEGORIES;
+  }
+
+  async searchVehiclesByModel(params: VehicleModelSearchParams): Promise<CatalogVehicle[]> {
+    const targetMake = normalizeForMatch(params.make);
+    const targetModel = normalizeForMatch(params.model);
+
+    const results: CatalogVehicle[] = [];
+
+    for (const [plate, v] of Object.entries(DEMO_VEHICLES)) {
+      const makeMatches = normalizeForMatch(v.make) === targetMake;
+      const modelMatches =
+        normalizeForMatch(v.model).includes(targetModel) ||
+        targetModel.includes(normalizeForMatch(v.model.split(" ")[0]));
+      const yearMatches = !params.year || v.year === params.year;
+      const fuelMatches =
+        !params.fuelType ||
+        normalizeForMatch(v.fuelType ?? "") === normalizeForMatch(params.fuelType);
+
+      if (makeMatches && modelMatches && yearMatches && fuelMatches) {
+        results.push({ kTypeId: plateToKTypeId(plate), ...v });
+      }
+    }
+
+    return results;
   }
 }

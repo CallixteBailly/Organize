@@ -16,7 +16,7 @@ interface LocalVehicle {
 
 interface Props {
   vehicle: CatalogVehicle;
-  plate: string;
+  plate?: string;
   localVehicle: LocalVehicle | null;
 }
 
@@ -46,7 +46,7 @@ export function VehicleCard({ vehicle, plate, localVehicle }: Props) {
                 )}
               </div>
               <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                <span className="font-mono tracking-wider uppercase">{plate}</span>
+                {plate && <span className="font-mono tracking-wider uppercase">{plate}</span>}
                 {vehicle.engineCode && <span>Moteur : {vehicle.engineCode}</span>}
                 {fuelLabel && <span>{fuelLabel}</span>}
                 {vehicle.displacement && <span>{vehicle.displacement} cc</span>}

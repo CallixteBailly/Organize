@@ -6,7 +6,7 @@ import { HistovecProvider, type HistovecParams } from "./providers/histovec.prov
 import { LargusProvider } from "./providers/largus.provider";
 import { CustomApiProvider } from "./providers/custom-api.provider";
 import { CatalogDisabledError } from "./errors";
-import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory } from "./types";
+import type { IVehicleCatalogProvider, CatalogVehicle, CatalogCategory, VehicleModelSearchParams } from "./types";
 import {
   getPlateIdentity,
   upsertPlateIdentity,
@@ -17,6 +17,15 @@ export * from "./types";
 export * from "./errors";
 export * from "./config";
 export type { HistovecParams } from "./providers/histovec.provider";
+
+function modelToKTypeId(make: string, model: string, year?: number): number {
+  const str = `${make.toLowerCase()}:${model.toLowerCase()}:${year ?? 0}`;
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash ^ str.charCodeAt(i)) >>> 0;
+  }
+  return (hash % 900000) + 100000;
+}
 
 function normalizePlate(plate: string): string {
   return plate.toUpperCase().replace(/[\s-]/g, "");
@@ -120,6 +129,48 @@ export async function resolvePlateWithCache(
     }
   }
 
+  return vehicle;
+}
+
+/**
+ * Resolves a vehicle from make/model/year params.
+ * Tries the provider's searchVehiclesByModel; falls back to a synthetic vehicle
+ * built from the provided params so that parts lookup still works.
+ */
+export async function resolveVehicleByModel(
+  params: VehicleModelSearchParams,
+): Promise<CatalogVehicle | null> {
+  const config = getCatalogConfig();
+  if (!config.enabled) throw new CatalogDisabledError();
+
+  const cacheKey = `model:${params.make.toLowerCase().replace(/\s+/g, "_")}:${params.model.toLowerCase().replace(/\s+/g, "_")}:${params.year ?? "0"}:${params.fuelType ?? "any"}`;
+
+  const cached = await getCachedVehicle(cacheKey);
+  if (cached) return cached;
+
+  const { vehicle: vehicleProvider } = getProviders();
+
+  let vehicle: CatalogVehicle | null = null;
+
+  if ("searchVehiclesByModel" in vehicleProvider && vehicleProvider.searchVehiclesByModel) {
+    const results = await vehicleProvider.searchVehiclesByModel(params);
+    vehicle = results[0] ?? null;
+  }
+
+  // Fallback: synthetic vehicle from the provided params
+  if (!vehicle) {
+    vehicle = {
+      kTypeId: modelToKTypeId(params.make, params.model, params.year),
+      make: params.make,
+      model: params.model,
+      year: params.year ?? null,
+      engineCode: null,
+      fuelType: params.fuelType ?? null,
+      displacement: null,
+    };
+  }
+
+  await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);
   return vehicle;
 }
 

@@ -21,7 +21,7 @@ export default async function CatalogPage({ searchParams }: Props) {
         description={
           useHistovec
             ? "Identification via Histovec (ANTS) — plaque + carte grise requises"
-            : "Recherche par immatriculation — pièces compatibles par catégorie"
+            : "Recherche par immatriculation ou par marque / modèle"
         }
       />
       <CatalogShell

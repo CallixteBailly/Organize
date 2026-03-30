@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { PlateSearchForm, type SearchParams } from "./plate-search-form";
+import { VehicleModelSearchForm, type ModelSearchParams } from "./vehicle-model-search-form";
 import { VehicleCard } from "./vehicle-card";
 import { PartsCatalog } from "./parts-catalog";
 import type { CatalogVehicle, CatalogCategory } from "@/lib/catalog";
@@ -31,7 +32,10 @@ interface Props {
   useHistovec: boolean;
 }
 
+type SearchMode = "plate" | "model";
+
 export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }: Props) {
+  const [searchMode, setSearchMode] = useState<SearchMode>("plate");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [partsLoading, setPartsLoading] = useState(false);
   const [vehicle, setVehicle] = useState<CatalogVehicle | null>(null);
@@ -40,6 +44,17 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
   const [searchedPlate, setSearchedPlate] = useState(initialPlate ?? "");
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [partsError, setPartsError] = useState<string | null>(null);
+
+  function switchSearchMode(mode: SearchMode) {
+    if (mode === searchMode) return;
+    setSearchMode(mode);
+    setVehicle(null);
+    setLocalVehicle(null);
+    setCategories(null);
+    setLookupError(null);
+    setPartsError(null);
+    setSearchedPlate("");
+  }
 
   const fetchParts = useCallback(async (kTypeId: number, vehicleMake?: string, vehicleModel?: string) => {
     setPartsLoading(true);
@@ -64,7 +79,7 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
     }
   }, []);
 
-  const handleSearch = useCallback(
+  const handlePlateSearch = useCallback(
     async ({ plate, formule, nom }: SearchParams) => {
       setSearchedPlate(plate);
       setLookupLoading(true);
@@ -100,29 +115,101 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
     [fetchParts],
   );
 
-  // Auto-recherche si une plaque est passée en URL (depuis un OR par exemple)
+  const handleModelSearch = useCallback(
+    async (params: ModelSearchParams) => {
+      setLookupLoading(true);
+      setLookupError(null);
+      setVehicle(null);
+      setLocalVehicle(null);
+      setCategories(null);
+      setPartsError(null);
+
+      try {
+        const url = new URL("/api/catalog/model-search", window.location.origin);
+        url.searchParams.set("make", params.make);
+        url.searchParams.set("model", params.model);
+        if (params.year) url.searchParams.set("year", String(params.year));
+        if (params.fuelType) url.searchParams.set("fuelType", params.fuelType);
+
+        const res = await fetch(url.toString());
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setLookupError(data.error ?? "Véhicule introuvable");
+          return;
+        }
+        const data: { vehicle: CatalogVehicle } = await res.json();
+        setVehicle(data.vehicle);
+        await fetchParts(data.vehicle.kTypeId, data.vehicle.make, data.vehicle.model);
+      } catch {
+        setLookupError("Erreur réseau lors de la recherche");
+      } finally {
+        setLookupLoading(false);
+      }
+    },
+    [fetchParts],
+  );
+
+  // Auto-search if a plate is passed via URL (e.g. from a repair order)
   useEffect(() => {
     if (initialPlate && !useHistovec) {
-      handleSearch({ plate: initialPlate });
+      handlePlateSearch({ plate: initialPlate });
     }
-    // On veut juste lancer la recherche au montage — handleSearch est stable (useCallback)
+    // Only on mount — handlePlateSearch is stable (useCallback)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="space-y-6">
-      <PlateSearchForm
-        defaultValue={initialPlate}
-        loading={lookupLoading}
-        error={lookupError}
-        useHistovec={useHistovec}
-        onSearch={handleSearch}
-      />
+      {/* Search mode tabs */}
+      <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+        <button
+          type="button"
+          onClick={() => switchSearchMode("plate")}
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            searchMode === "plate"
+              ? "bg-background shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Par immatriculation
+        </button>
+        <button
+          type="button"
+          onClick={() => switchSearchMode("model")}
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            searchMode === "model"
+              ? "bg-background shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Par marque / modèle
+        </button>
+      </div>
+
+      {searchMode === "plate" ? (
+        <PlateSearchForm
+          defaultValue={initialPlate}
+          loading={lookupLoading}
+          error={lookupError}
+          useHistovec={useHistovec}
+          onSearch={handlePlateSearch}
+        />
+      ) : (
+        <VehicleModelSearchForm
+          loading={lookupLoading}
+          error={lookupError}
+          onSearch={handleModelSearch}
+        />
+      )}
 
       {vehicle && (
         <VehicleCard
           vehicle={vehicle}
-          plate={searchedPlate.replace(/[\s-]/g, "").toUpperCase()}
+          plate={
+            searchMode === "plate"
+              ? searchedPlate.replace(/[\s-]/g, "").toUpperCase()
+              : undefined
+          }
           localVehicle={localVehicle}
         />
       )}

@@ -15,6 +15,12 @@ test.describe("01 — Authentication", () => {
     await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
   });
 
+  test("login page links to register", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("link", { name: "Créer mon garage" }).click();
+    await expect(page).toHaveURL(/\/register/);
+  });
+
   test("invalid credentials show error message", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill("fake@test.fr");
