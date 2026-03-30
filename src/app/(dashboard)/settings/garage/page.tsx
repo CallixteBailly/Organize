@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getGarage } from "@/server/services/garage.service";
 import { PageHeader } from "@/components/layouts/page-header";
 import { GarageSettingsForm } from "./garage-form";
+
+export const metadata: Metadata = { title: "Parametres du garage" };
 
 export default async function GarageSettingsPage() {
   const session = await auth();

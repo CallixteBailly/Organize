@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getCustomers, searchCustomers } from "@/server/services/customer.service";
 import { PageHeader } from "@/components/layouts/page-header";
 import { CustomerList } from "./customer-list";
+
+export const metadata: Metadata = { title: "Clients" };
 
 interface Props {
   searchParams: Promise<{ q?: string; page?: string }>;

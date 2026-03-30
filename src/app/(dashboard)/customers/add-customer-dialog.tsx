@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { X } from "lucide-react";
 import { createCustomerAction, type CustomerActionState } from "@/server/actions/customers";
+import { useDialog } from "@/lib/hooks/use-dialog";
 import { toast } from "sonner";
 
 const initialState: CustomerActionState = { success: false };
@@ -18,6 +19,7 @@ interface Props {
 
 export function AddCustomerDialog({ onClose }: Props) {
   const router = useRouter();
+  const dialogRef = useDialog(onClose);
   const [state, formAction, isPending] = useActionState(createCustomerAction, initialState);
 
   useEffect(() => {
@@ -30,19 +32,20 @@ export function AddCustomerDialog({ onClose }: Props) {
   }, [state, onClose, router]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="add-customer-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Nouveau client</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <CardTitle id="add-customer-title">Nouveau client</CardTitle>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fermer">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Type</label>
+              <label htmlFor="customer-type" className="text-sm font-medium">Type</label>
               <select
+                id="customer-type"
                 name="type"
                 className="flex h-12 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >

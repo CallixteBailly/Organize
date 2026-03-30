@@ -19,10 +19,10 @@
   --color-ring: #2563eb;
 
   /* Status colors */
-  --color-success: #16a34a;
+  --color-success: #15803d;
   --color-success-foreground: #ffffff;
   --color-warning: #f59e0b;
-  --color-warning-foreground: #ffffff;
+  --color-warning-foreground: #451a03;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
 
@@ -48,7 +48,9 @@
     --color-ring: #3b82f6;
 
     --color-success: #22c55e;
+    --color-success-foreground: #052e16;
     --color-warning: #fbbf24;
+    --color-warning-foreground: #451a03;
     --color-destructive: #ef4444;
   }
 }
@@ -106,5 +108,16 @@ html {
   :root {
     --safe-area-top: env(safe-area-inset-top);
     --safe-area-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Respect user preference to reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

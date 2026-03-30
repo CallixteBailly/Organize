@@ -49,7 +49,7 @@ export function CategoryManager({ categories }: Props) {
         <CardContent className="pt-4">
           <form action={formAction} className="flex gap-3">
             <Input name="name" placeholder="Nom de la categorie" required className="flex-1" />
-            <Input name="color" type="color" defaultValue="#2563eb" className="h-12 w-14 p-1" />
+            <Input name="color" type="color" defaultValue="#2563eb" className="h-12 w-14 p-1" aria-label="Couleur de la categorie" />
             <Button type="submit" disabled={isPending}>
               {isPending ? <Spinner className="h-4 w-4" /> : <><Plus className="h-4 w-4" /> Ajouter</>}
             </Button>
@@ -80,11 +80,12 @@ export function CategoryManager({ categories }: Props) {
                   size="icon"
                   onClick={() => handleDelete(cat.id)}
                   disabled={deleting === cat.id}
+                  aria-label={`Supprimer ${cat.name}`}
                 >
                   {deleting === cat.id ? (
                     <Spinner className="h-4 w-4" />
                   ) : (
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                   )}
                 </Button>
               </CardContent>

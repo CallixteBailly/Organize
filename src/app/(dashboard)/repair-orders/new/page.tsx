@@ -101,9 +101,10 @@ export default function NewRepairOrderPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Vehicule</label>
+                <label htmlFor="ro-vehicle" className="text-sm font-medium">Vehicule</label>
                 {vehicles.length > 0 ? (
                   <select
+                    id="ro-vehicle"
                     name="vehicleId"
                     required
                     className="flex h-12 w-full rounded-[var(--radius)] border border-input bg-background px-3 py-2 text-base"
@@ -115,18 +116,19 @@ export default function NewRepairOrderPage() {
                     ))}
                   </select>
                 ) : (
-                  <Input name="vehicleId" placeholder="ID du vehicule (temporaire)" required />
+                  <Input id="ro-vehicle" name="vehicleId" placeholder="ID du vehicule (temporaire)" required />
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Kilometrage a l&apos;entree</label>
-                <Input name="mileageAtIntake" type="number" min="0" placeholder="Ex: 85000" />
+                <label htmlFor="ro-mileage" className="text-sm font-medium">Kilometrage a l&apos;entree</label>
+                <Input id="ro-mileage" name="mileageAtIntake" type="number" min="0" placeholder="Ex: 85000" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Plainte client</label>
+                <label htmlFor="ro-complaint" className="text-sm font-medium">Plainte client</label>
                 <textarea
+                  id="ro-complaint"
                   name="customerComplaint"
                   rows={3}
                   placeholder="Description du probleme signale par le client..."

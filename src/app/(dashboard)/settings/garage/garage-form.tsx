@@ -42,40 +42,40 @@ export function GarageSettingsForm({ garage }: GarageFormProps) {
         <form action={formAction} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Nom du garage</label>
-              <Input name="name" defaultValue={garage.name} required />
+              <label htmlFor="garage-name" className="text-sm font-medium">Nom du garage</label>
+              <Input id="garage-name" name="name" defaultValue={garage.name} required />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">SIRET</label>
-              <Input name="siret" defaultValue={garage.siret} required maxLength={14} />
+              <label htmlFor="garage-siret" className="text-sm font-medium">SIRET</label>
+              <Input id="garage-siret" name="siret" defaultValue={garage.siret} required maxLength={14} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">N° TVA</label>
-              <Input name="vatNumber" defaultValue={garage.vatNumber ?? ""} />
+              <label htmlFor="garage-vat" className="text-sm font-medium">N° TVA</label>
+              <Input id="garage-vat" name="vatNumber" defaultValue={garage.vatNumber ?? ""} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Telephone</label>
-              <Input name="phone" defaultValue={garage.phone ?? ""} />
+              <label htmlFor="garage-phone" className="text-sm font-medium">Telephone</label>
+              <Input id="garage-phone" name="phone" defaultValue={garage.phone ?? ""} />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">Adresse</label>
-              <Input name="address" defaultValue={garage.address} required />
+              <label htmlFor="garage-address" className="text-sm font-medium">Adresse</label>
+              <Input id="garage-address" name="address" defaultValue={garage.address} required />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Ville</label>
-              <Input name="city" defaultValue={garage.city} required />
+              <label htmlFor="garage-city" className="text-sm font-medium">Ville</label>
+              <Input id="garage-city" name="city" defaultValue={garage.city} required />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Code postal</label>
-              <Input name="postalCode" defaultValue={garage.postalCode} required maxLength={5} />
+              <label htmlFor="garage-postal" className="text-sm font-medium">Code postal</label>
+              <Input id="garage-postal" name="postalCode" defaultValue={garage.postalCode} required maxLength={5} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input name="email" type="email" defaultValue={garage.email ?? ""} />
+              <label htmlFor="garage-email" className="text-sm font-medium">Email</label>
+              <Input id="garage-email" name="email" type="email" defaultValue={garage.email ?? ""} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Site web</label>
-              <Input name="website" defaultValue={garage.website ?? ""} />
+              <label htmlFor="garage-website" className="text-sm font-medium">Site web</label>
+              <Input id="garage-website" name="website" defaultValue={garage.website ?? ""} />
             </div>
           </div>
 
@@ -83,16 +83,17 @@ export function GarageSettingsForm({ garage }: GarageFormProps) {
             <p className="mb-3 text-sm font-medium text-muted-foreground">Prefixes documents</p>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Factures</label>
-                <Input name="invoicePrefix" defaultValue={garage.invoicePrefix} maxLength={10} />
+                <label htmlFor="garage-invoice-prefix" className="text-sm font-medium">Factures</label>
+                <Input id="garage-invoice-prefix" name="invoicePrefix" defaultValue={garage.invoicePrefix} maxLength={10} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Devis</label>
-                <Input name="quotePrefix" defaultValue={garage.quotePrefix} maxLength={10} />
+                <label htmlFor="garage-quote-prefix" className="text-sm font-medium">Devis</label>
+                <Input id="garage-quote-prefix" name="quotePrefix" defaultValue={garage.quotePrefix} maxLength={10} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">OR</label>
+                <label htmlFor="garage-ro-prefix" className="text-sm font-medium">OR</label>
                 <Input
+                  id="garage-ro-prefix"
                   name="repairOrderPrefix"
                   defaultValue={garage.repairOrderPrefix}
                   maxLength={10}

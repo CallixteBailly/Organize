@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from "react";
+import { forwardRef, useId, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils/cn";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -6,11 +6,18 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, type, ...props }, ref) => {
+  ({ className, error, type, id, ...props }, ref) => {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
+    const errorId = `${inputId}-error`;
+
     return (
       <div className="w-full">
         <input
           type={type}
+          id={inputId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className={cn(
             "flex h-12 w-full rounded-[var(--radius)] border bg-background px-3 py-2 text-base",
             "placeholder:text-muted-foreground",
@@ -22,7 +29,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
+        {error && (
+          <p id={errorId} role="alert" className="mt-1 text-sm text-destructive">
+            {error}
+          </p>
+        )}
       </div>
     );
   },

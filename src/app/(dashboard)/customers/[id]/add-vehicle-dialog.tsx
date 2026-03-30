@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { X } from "lucide-react";
 import { createVehicleAction, type VehicleActionState } from "@/server/actions/vehicles";
+import { useDialog } from "@/lib/hooks/use-dialog";
 import { toast } from "sonner";
 
 const initialState: VehicleActionState = { success: false };
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function AddVehicleDialog({ customerId, onClose }: Props) {
+  const dialogRef = useDialog(onClose);
   const [state, formAction, isPending] = useActionState(createVehicleAction, initialState);
 
   useEffect(() => {
@@ -28,11 +30,11 @@ export function AddVehicleDialog({ customerId, onClose }: Props) {
   }, [state, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="add-vehicle-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Nouveau vehicule</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <CardTitle id="add-vehicle-title">Nouveau vehicule</CardTitle>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fermer">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>

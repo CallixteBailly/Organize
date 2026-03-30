@@ -20,16 +20,17 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-border lg:bg-card">
       <div className="flex h-16 items-center gap-2 border-b border-border px-6">
-        <Wrench className="h-6 w-6 text-primary" />
+        <Wrench className="h-6 w-6 text-primary" aria-hidden="true" />
         <span className="text-lg font-bold text-foreground">Organize</span>
       </div>
-      <nav className="flex-1 space-y-1 p-4">
+      <nav aria-label="Navigation principale" className="flex-1 space-y-1 p-4">
         {visibleItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-[var(--radius)] px-3 py-3 text-sm font-medium transition-colors",
                 isActive
@@ -37,7 +38,7 @@ export function Sidebar() {
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground",
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-5 w-5" aria-hidden="true" />
               {item.label}
             </Link>
           );

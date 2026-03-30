@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getOrders } from "@/server/services/order.service";
@@ -6,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { OrderList } from "./order-list";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+
+export const metadata: Metadata = { title: "Commandes" };
 
 interface Props {
   searchParams: Promise<{ page?: string }>;

@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getSuppliers } from "@/server/services/supplier.service";
 import { PageHeader } from "@/components/layouts/page-header";
 import { SupplierManager } from "./supplier-manager";
+
+export const metadata: Metadata = { title: "Fournisseurs" };
 
 export default async function SuppliersPage() {
   const session = await auth();

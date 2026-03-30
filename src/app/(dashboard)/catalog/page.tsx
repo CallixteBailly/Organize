@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layouts/page-header";
 import { CatalogShell } from "./catalog-shell";
+
+export const metadata: Metadata = { title: "Catalogue" };
 
 interface Props {
   searchParams: Promise<{ plate?: string; roId?: string }>;

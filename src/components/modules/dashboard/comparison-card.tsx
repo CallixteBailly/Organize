@@ -33,11 +33,11 @@ export function ComparisonCard({
         <p className="text-2xl font-bold text-foreground">{formatValue(currentValue)}</p>
         <div className="flex items-center gap-2">
           {isNeutral ? (
-            <Minus className="h-4 w-4 text-muted-foreground" />
+            <Minus className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           ) : isPositive ? (
-            <TrendingUp className="h-4 w-4 text-success" />
+            <TrendingUp className="h-4 w-4 text-success" aria-hidden="true" />
           ) : (
-            <TrendingDown className="h-4 w-4 text-destructive" />
+            <TrendingDown className="h-4 w-4 text-destructive" aria-hidden="true" />
           )}
           <span
             className={cn(
@@ -45,7 +45,8 @@ export function ComparisonCard({
               isNeutral ? "text-muted-foreground" : isPositive ? "text-success" : "text-destructive",
             )}
           >
-            {isPositive ? "+" : ""}{changePercent}%
+            <span aria-hidden="true">{isPositive ? "+" : ""}{changePercent}%</span>
+            <span className="sr-only">{isNeutral ? "Stable" : isPositive ? `En hausse de ${changePercent}%` : `En baisse de ${Math.abs(changePercent)}%`}</span>
           </span>
           <span className="text-sm text-muted-foreground">vs N-1 ({formatValue(previousValue)})</span>
         </div>
