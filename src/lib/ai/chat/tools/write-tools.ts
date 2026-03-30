@@ -9,6 +9,11 @@ import { db } from "@/lib/db";
 import { repairOrders } from "@/lib/db/schema";
 import type { ToolContext } from "../types";
 
+function sanitizePhone(phone?: string): string | undefined {
+  if (!phone) return undefined;
+  return phone.replace(/[\s.\-()]/g, "");
+}
+
 // Statuts cibles sûrs (pas de closeRepairOrder qui décompte le stock)
 const SAFE_TARGET_STATUSES = ["pending", "approved", "in_progress"] as const;
 const SAFE_SOURCE_STATUSES = ["draft", "pending", "approved"] as const;
@@ -25,24 +30,40 @@ export function createWriteTools(ctx: ToolContext) {
       phone?: string;
       email?: string;
     }) => {
-      const customer = await createCustomer(garageId, {
-        type: input.type,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        companyName: input.companyName,
-        phone: input.phone,
-        email: input.email,
-      });
-      const name =
-        input.type === "company"
-          ? input.companyName
-          : [input.firstName, input.lastName].filter(Boolean).join(" ");
-      return JSON.stringify({
-        id: customer.id,
-        name,
-        href: `/customers/${customer.id}`,
-        label: `Voir la fiche client — ${name}`,
-      });
+      // Valider les champs requis selon le type
+      if (input.type === "individual" && !input.firstName && !input.lastName) {
+        return JSON.stringify({ error: "Le prenom ou le nom est requis pour un particulier." });
+      }
+      if (input.type === "company" && !input.companyName) {
+        return JSON.stringify({ error: "Le nom de l'entreprise est requis." });
+      }
+
+      const phone = sanitizePhone(input.phone);
+
+      try {
+        const customer = await createCustomer(garageId, {
+          type: input.type,
+          firstName: input.firstName?.trim() || undefined,
+          lastName: input.lastName?.trim() || undefined,
+          companyName: input.companyName?.trim() || undefined,
+          phone,
+          email: input.email?.trim()?.toLowerCase() || undefined,
+        });
+        const name =
+          input.type === "company"
+            ? input.companyName
+            : [input.firstName, input.lastName].filter(Boolean).join(" ");
+        return JSON.stringify({
+          id: customer.id,
+          name,
+          href: `/customers/${customer.id}`,
+          label: `Voir la fiche client — ${name}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] create_customer error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la creation du client : ${message}` });
+      }
     },
     {
       name: "create_customer",
@@ -67,22 +88,28 @@ export function createWriteTools(ctx: ToolContext) {
       year?: number;
       mileage?: number;
     }) => {
-      const vehicle = await createVehicle(garageId, {
-        customerId: input.customerId,
-        licensePlate: input.licensePlate,
-        brand: input.brand,
-        model: input.model,
-        year: input.year,
-        mileage: input.mileage,
-      });
-      return JSON.stringify({
-        id: vehicle.id,
-        plate: vehicle.licensePlate,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        href: `/vehicles/${vehicle.id}`,
-        label: `Voir le véhicule — ${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})`,
-      });
+      try {
+        const vehicle = await createVehicle(garageId, {
+          customerId: input.customerId,
+          licensePlate: input.licensePlate.toUpperCase().replace(/[\s\-]/g, ""),
+          brand: input.brand.trim(),
+          model: input.model.trim(),
+          year: input.year,
+          mileage: input.mileage,
+        });
+        return JSON.stringify({
+          id: vehicle.id,
+          plate: vehicle.licensePlate,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          href: `/vehicles/${vehicle.id}`,
+          label: `Voir le véhicule — ${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] create_vehicle error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la creation du vehicule : ${message}` });
+      }
     },
     {
       name: "create_vehicle",
@@ -105,19 +132,25 @@ export function createWriteTools(ctx: ToolContext) {
       customerComplaint?: string;
       mileageAtIntake?: number;
     }) => {
-      const ro = await createRepairOrder(garageId, userId, {
-        customerId: input.customerId,
-        vehicleId: input.vehicleId,
-        customerComplaint: input.customerComplaint,
-        mileageAtIntake: input.mileageAtIntake,
-      });
-      return JSON.stringify({
-        id: ro.id,
-        number: ro.repairOrderNumber,
-        status: ro.status,
-        href: `/repair-orders/${ro.id}`,
-        label: `Voir l'intervention — ${ro.repairOrderNumber}`,
-      });
+      try {
+        const ro = await createRepairOrder(garageId, userId, {
+          customerId: input.customerId,
+          vehicleId: input.vehicleId,
+          customerComplaint: input.customerComplaint?.trim(),
+          mileageAtIntake: input.mileageAtIntake,
+        });
+        return JSON.stringify({
+          id: ro.id,
+          number: ro.repairOrderNumber,
+          status: ro.status,
+          href: `/repair-orders/${ro.id}`,
+          label: `Voir l'intervention — ${ro.repairOrderNumber}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] create_repair_order error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la creation de l'intervention : ${message}` });
+      }
     },
     {
       name: "create_repair_order",
@@ -134,18 +167,24 @@ export function createWriteTools(ctx: ToolContext) {
 
   const createQuoteDraftTool = tool(
     async (input: { customerId: string; vehicleId?: string; notes?: string }) => {
-      const quote = await createQuote(garageId, userId, {
-        customerId: input.customerId,
-        vehicleId: input.vehicleId || "",
-        notes: input.notes,
-        validUntil: undefined,
-      });
-      return JSON.stringify({
-        id: quote.id,
-        number: quote.quoteNumber,
-        href: `/quotes/${quote.id}`,
-        label: `Voir le devis — ${quote.quoteNumber}`,
-      });
+      try {
+        const quote = await createQuote(garageId, userId, {
+          customerId: input.customerId,
+          vehicleId: input.vehicleId || "",
+          notes: input.notes?.trim(),
+          validUntil: undefined,
+        });
+        return JSON.stringify({
+          id: quote.id,
+          number: quote.quoteNumber,
+          href: `/quotes/${quote.id}`,
+          label: `Voir le devis — ${quote.quoteNumber}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] create_quote_draft error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la creation du devis : ${message}` });
+      }
     },
     {
       name: "create_quote_draft",

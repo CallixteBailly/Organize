@@ -93,6 +93,7 @@ export async function runAgentLoop(
           }),
         );
       } catch (error) {
+        console.error(`[Chat Agent] Tool "${toolCall.name}" threw:`, error);
         currentMessages.push(
           new ToolMessage({
             content: JSON.stringify({
