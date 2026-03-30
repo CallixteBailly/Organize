@@ -59,5 +59,7 @@ export async function GET(request: NextRequest) {
     vatNumber: company.numero_tva_intra ?? "",
     dirigeantFirstName: dirigeant?.prenoms ?? "",
     dirigeantLastName: dirigeant?.nom ?? "",
+    isClosed: company.etat_administratif === "C",
+    closedDate: company.date_fermeture ?? null,
   });
 }

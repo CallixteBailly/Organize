@@ -31,10 +31,17 @@ export async function registerAction(
     return { success: true };
   } catch (error: unknown) {
     console.error("[register] Registration failed:", error);
-    const message =
-      error instanceof Error && error.message.includes("unique")
-        ? "Un garage avec ce SIRET ou un utilisateur avec cet email existe deja"
-        : "Une erreur est survenue lors de l'inscription";
+    let message = "Une erreur est survenue lors de l'inscription";
+    if (error instanceof Error) {
+      const msg = error.message;
+      if (msg.includes("garages_siret_unique") || (msg.includes("unique") && msg.includes("siret"))) {
+        message = "Un garage avec ce SIRET existe deja";
+      } else if (msg.includes("users_email_garage_idx") || (msg.includes("unique") && msg.includes("email"))) {
+        message = "Un utilisateur avec cet email existe deja";
+      } else if (msg.includes("unique")) {
+        message = "Un garage avec ce SIRET ou un utilisateur avec cet email existe deja";
+      }
+    }
     return { success: false, error: message };
   }
 }

@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
   const [siretLoading, setSiretLoading] = useState(false);
   const [siretError, setSiretError] = useState<string | null>(null);
+  const [siretClosed, setSiretClosed] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   const lookupSiret = useCallback(async () => {
@@ -30,12 +31,16 @@ export default function RegisterPage() {
 
     setSiretLoading(true);
     setSiretError(null);
+    setSiretClosed(false);
     try {
       const res = await fetch(`/api/siret?q=${siret}`);
       const data = await res.json();
       if (!res.ok) {
         setSiretError(data.error ?? "Erreur lors de la recherche");
         return;
+      }
+      if (data.isClosed) {
+        setSiretClosed(true);
       }
       // Auto-fill form fields
       const fields: Record<string, string> = {
@@ -102,6 +107,11 @@ export default function RegisterPage() {
                 {siretLoading ? <Spinner className="h-4 w-4" /> : "Rechercher"}
               </Button>
             </div>
+            {siretClosed && (
+              <div role="alert" className="rounded-[var(--radius)] bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+                Cette entreprise est radiee ou fermee. Vous pouvez continuer l&apos;inscription si necessaire.
+              </div>
+            )}
             <Input
               name="garageName"
               aria-label="Nom du garage"
