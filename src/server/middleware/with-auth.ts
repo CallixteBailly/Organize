@@ -6,6 +6,7 @@ export interface AuthContext {
   userId: string;
   garageId: string;
   role: UserRole;
+  userName: string;
 }
 
 type AuthenticatedHandler = (
@@ -29,6 +30,7 @@ export function withAuth(handler: AuthenticatedHandler, options?: { roles?: User
       userId: session.user.id,
       garageId: session.user.garageId,
       role: session.user.role,
+      userName: session.user.name ?? "Utilisateur",
     };
 
     return handler(req, ctx);

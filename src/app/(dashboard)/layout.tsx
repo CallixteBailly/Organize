@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/layouts/sidebar";
 import { MobileNav } from "@/components/layouts/mobile-nav";
 import { Topbar } from "@/components/layouts/topbar";
 import { AIProvider } from "@/components/ai/ai-provider";
-import { QuickCaptureFAB } from "@/components/quick-capture";
+import { ClientFABs } from "@/components/layouts/client-fabs";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const aiEnabled = process.env.AI_ENABLED !== "false";
@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Topbar />
           <main id="main-content" className="flex-1 overflow-y-auto p-4 pb-20 lg:p-6 lg:pb-6">{children}</main>
         </div>
-        <QuickCaptureFAB />
+        <ClientFABs />
         <MobileNav />
       </div>
     </AIProvider>

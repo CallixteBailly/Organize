@@ -20,3 +20,9 @@ export const AI_INPUT_LIMITS = {
   minLength: 3,
   maxLength: 500,
 } as const;
+
+export const AI_CHAT = {
+  maxIterations: 5,
+  maxHistory: 20,
+  maxMessageLength: 2000,
+} as const;
