@@ -78,12 +78,12 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
                       {/* Nom de la pièce — info principale */}
                       <p className="font-semibold text-foreground leading-snug">{part.name}</p>
 
-                      {/* Marque + référence — secondaires */}
+                      {/* Marque + référence de commande */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-primary uppercase tracking-wider">
                           {part.brand}
                         </span>
-                        <span className="font-mono text-xs text-muted-foreground">
+                        <span className="font-mono text-sm font-semibold text-foreground bg-muted/50 px-1.5 py-0.5 rounded">
                           {part.reference}
                         </span>
                       </div>
@@ -96,7 +96,7 @@ export function PartsCatalog({ categories, repairOrderId }: Props) {
                       {/* Références constructeur */}
                       {part.oemNumbers.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                          <span className="text-xs text-muted-foreground">Réf. constructeur :</span>
+                          <span className="text-xs text-muted-foreground">N° origine :</span>
                           {part.oemNumbers.slice(0, 3).map((oem, i) => (
                             <span
                               key={i}
