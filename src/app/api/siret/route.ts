@@ -15,10 +15,12 @@ export async function GET(request: NextRequest) {
   let data;
   try {
     const res = await fetch(`${SIRENE_API}?q=${siret}&mtm_campaign=organize`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[siret] API returned ${res.status}: ${body.slice(0, 500)}`);
       return NextResponse.json(
         { error: "Service de recherche indisponible" },
         { status: 502 },
