@@ -48,7 +48,7 @@ test.describe("13 — Catalogue pièces", () => {
     await expect(page.getByText("Jeu de plaquettes de frein avant")).toBeVisible({ timeout: 10000 });
 
     // Check OEM references label is present
-    await expect(page.getByText("Réf. constructeur :").first()).toBeVisible();
+    await expect(page.getByText("N° origine :").first()).toBeVisible();
   });
 
   test("tip to open from repair order is shown when no roId", async ({ page }) => {
