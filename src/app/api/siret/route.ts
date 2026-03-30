@@ -12,16 +12,26 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const res = await fetch(`${SIRENE_API}?q=${siret}&mtm_campaign=organize`);
+  let data;
+  try {
+    const res = await fetch(`${SIRENE_API}?q=${siret}&mtm_campaign=organize`, {
+      signal: AbortSignal.timeout(5000),
+    });
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "Service de recherche indisponible" },
+        { status: 502 },
+      );
+    }
+
+    data = await res.json();
+  } catch {
     return NextResponse.json(
       { error: "Service de recherche indisponible" },
       { status: 502 },
     );
   }
-
-  const data = await res.json();
 
   if (!data.results?.length) {
     return NextResponse.json(

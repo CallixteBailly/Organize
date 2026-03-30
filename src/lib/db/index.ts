@@ -1,9 +1,9 @@
-import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
+import type { NeonDatabase } from "drizzle-orm/neon-serverless";
 import type { PgTransaction, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { TablesRelationalConfig } from "drizzle-orm";
 import * as schema from "./schema";
 
-type DbInstance = NeonHttpDatabase<typeof schema>;
+type DbInstance = NeonDatabase<typeof schema>;
 
 function createDb(): DbInstance {
   if (!process.env.DATABASE_URL) {
@@ -14,10 +14,10 @@ function createDb(): DbInstance {
 
   // Use postgres.js for local/standard PostgreSQL, Neon for serverless
   if (url.includes("neon.tech") || url.includes("neon.") || process.env.USE_NEON === "true") {
-    const { neon } = require("@neondatabase/serverless");
-    const { drizzle } = require("drizzle-orm/neon-http");
-    const sql = neon(url);
-    return drizzle(sql, { schema });
+    const { Pool } = require("@neondatabase/serverless");
+    const { drizzle } = require("drizzle-orm/neon-serverless");
+    const pool = new Pool({ connectionString: url });
+    return drizzle(pool, { schema });
   } else {
     const postgres = require("postgres");
     const { drizzle } = require("drizzle-orm/postgres-js");
