@@ -7,7 +7,7 @@ import { CatalogShell } from "./catalog-shell";
 export const metadata: Metadata = { title: "Catalogue" };
 
 interface Props {
-  searchParams: Promise<{ plate?: string; roId?: string }>;
+  searchParams: Promise<{ plate?: string; roId?: string; histovec?: string }>;
 }
 
 export default async function CatalogPage({ searchParams }: Props) {
@@ -15,7 +15,9 @@ export default async function CatalogPage({ searchParams }: Props) {
   if (!session?.user) redirect("/login");
 
   const params = await searchParams;
-  const useHistovec = process.env.CATALOG_PROVIDER === "histovec";
+  const useHistovec =
+    process.env.CATALOG_PROVIDER === "histovec" ||
+    (process.env.NODE_ENV !== "production" && params.histovec === "1");
 
   return (
     <div className="space-y-6">

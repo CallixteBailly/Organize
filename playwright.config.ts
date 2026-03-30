@@ -35,6 +35,7 @@ export default defineConfig({
       DATABASE_URL: "postgresql://postgres:postgres@localhost:54322/organize",
       AUTH_SECRET: "dev-secret-key-change-in-production-min-32-chars",
       AUTH_URL: "http://localhost:3000",
+      CATALOG_PROVIDER: "mock",
     },
   },
 });
