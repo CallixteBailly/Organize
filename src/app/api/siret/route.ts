@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     }
 
     data = await res.json();
-  } catch {
+  } catch (error) {
+    console.error("[siret] Lookup failed:", error);
     return NextResponse.json(
       { error: "Service de recherche indisponible" },
       { status: 502 },
@@ -59,5 +60,7 @@ export async function GET(request: NextRequest) {
     vatNumber: company.numero_tva_intra ?? "",
     dirigeantFirstName: dirigeant?.prenoms ?? "",
     dirigeantLastName: dirigeant?.nom ?? "",
+    isClosed: company.etat_administratif === "C",
+    closedDate: company.date_fermeture ?? null,
   });
 }

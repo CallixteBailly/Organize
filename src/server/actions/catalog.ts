@@ -38,7 +38,8 @@ export async function addCatalogPartToRepairOrderAction(
     });
     revalidatePath(`/repair-orders/${repairOrderId}`);
     return { success: true, repairOrderId };
-  } catch {
+  } catch (error) {
+    console.error("[catalog] Add part to RO failed:", error);
     return { success: false, error: "Erreur lors de l'ajout de la pièce à l'OR" };
   }
 }
