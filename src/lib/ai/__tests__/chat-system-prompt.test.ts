@@ -52,8 +52,9 @@ describe("buildChatSystemPrompt", () => {
 
   it("owner a les capacités d'écriture", () => {
     const prompt = buildChatSystemPrompt(base);
-    expect(prompt).toContain("Créer des clients");
+    expect(prompt).toContain("Créer et modifier des clients");
     expect(prompt).toContain("Créer des interventions");
+    expect(prompt).toContain("Créer et modifier des articles en stock");
   });
 
   it("mechanic n'a pas accès au tableau de bord", () => {

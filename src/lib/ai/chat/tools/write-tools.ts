@@ -1,10 +1,11 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod/v4";
 import { eq, and, inArray } from "drizzle-orm";
-import { createCustomer } from "@/server/services/customer.service";
-import { createVehicle } from "@/server/services/vehicle.service";
+import { createCustomer, updateCustomer } from "@/server/services/customer.service";
+import { createVehicle, updateVehicle } from "@/server/services/vehicle.service";
 import { createRepairOrder } from "@/server/services/repair-order.service";
 import { createQuote } from "@/server/services/quote.service";
+import { createStockItem, updateStockItem } from "@/server/services/stock.service";
 import { db } from "@/lib/db";
 import { repairOrders } from "@/lib/db/schema";
 import type { ToolContext } from "../types";
@@ -245,11 +246,251 @@ export function createWriteTools(ctx: ToolContext) {
     },
   );
 
+  const updateCustomerTool = tool(
+    async (input: {
+      customerId: string;
+      firstName?: string;
+      lastName?: string;
+      companyName?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      city?: string;
+      postalCode?: string;
+    }) => {
+      const { customerId, ...fields } = input;
+      const data: Record<string, unknown> = {};
+      if (fields.firstName !== undefined) data.firstName = fields.firstName.trim();
+      if (fields.lastName !== undefined) data.lastName = fields.lastName.trim();
+      if (fields.companyName !== undefined) data.companyName = fields.companyName.trim();
+      if (fields.phone !== undefined) data.phone = sanitizePhone(fields.phone);
+      if (fields.email !== undefined) data.email = fields.email.trim().toLowerCase();
+      if (fields.address !== undefined) data.address = fields.address.trim();
+      if (fields.city !== undefined) data.city = fields.city.trim();
+      if (fields.postalCode !== undefined) data.postalCode = fields.postalCode.trim();
+
+      try {
+        const updated = await updateCustomer(garageId, customerId, data);
+        if (!updated) return JSON.stringify({ error: "Client non trouvé." });
+        const name =
+          updated.type === "company"
+            ? updated.companyName
+            : [updated.firstName, updated.lastName].filter(Boolean).join(" ");
+        return JSON.stringify({
+          id: updated.id,
+          name,
+          href: `/customers/${updated.id}`,
+          label: `Voir la fiche client — ${name}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] update_customer error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la modification du client : ${message}` });
+      }
+    },
+    {
+      name: "update_customer",
+      description: "Modifie les informations d'un client existant.",
+      schema: z.object({
+        customerId: z.string().describe("UUID du client"),
+        firstName: z.string().optional().describe("Nouveau prénom"),
+        lastName: z.string().optional().describe("Nouveau nom"),
+        companyName: z.string().optional().describe("Nouveau nom d'entreprise"),
+        phone: z.string().optional().describe("Nouveau téléphone"),
+        email: z.string().optional().describe("Nouvel email"),
+        address: z.string().optional().describe("Nouvelle adresse"),
+        city: z.string().optional().describe("Nouvelle ville"),
+        postalCode: z.string().optional().describe("Nouveau code postal"),
+      }),
+    },
+  );
+
+  const updateVehicleTool = tool(
+    async (input: {
+      vehicleId: string;
+      licensePlate?: string;
+      brand?: string;
+      model?: string;
+      year?: number;
+      mileage?: number;
+    }) => {
+      const { vehicleId, ...fields } = input;
+      const data: Record<string, unknown> = {};
+      if (fields.licensePlate !== undefined)
+        data.licensePlate = fields.licensePlate.toUpperCase().replace(/[\s\-]/g, "");
+      if (fields.brand !== undefined) data.brand = fields.brand.trim();
+      if (fields.model !== undefined) data.model = fields.model.trim();
+      if (fields.year !== undefined) data.year = fields.year;
+      if (fields.mileage !== undefined) data.mileage = fields.mileage;
+
+      try {
+        const updated = await updateVehicle(garageId, vehicleId, data);
+        if (!updated) return JSON.stringify({ error: "Véhicule non trouvé." });
+        return JSON.stringify({
+          id: updated.id,
+          plate: updated.licensePlate,
+          brand: updated.brand,
+          model: updated.model,
+          href: `/vehicles/${updated.id}`,
+          label: `Voir le véhicule — ${updated.brand} ${updated.model} (${updated.licensePlate})`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] update_vehicle error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la modification du véhicule : ${message}` });
+      }
+    },
+    {
+      name: "update_vehicle",
+      description: "Modifie les informations d'un véhicule existant.",
+      schema: z.object({
+        vehicleId: z.string().describe("UUID du véhicule"),
+        licensePlate: z.string().optional().describe("Nouvelle immatriculation"),
+        brand: z.string().optional().describe("Nouvelle marque"),
+        model: z.string().optional().describe("Nouveau modèle"),
+        year: z.number().int().optional().describe("Nouvelle année"),
+        mileage: z.number().int().optional().describe("Nouveau kilométrage"),
+      }),
+    },
+  );
+
+  const createStockItemTool = tool(
+    async (input: {
+      name: string;
+      reference: string;
+      purchasePrice?: number;
+      sellingPrice: number;
+      quantity?: number;
+      minQuantity?: number;
+      brand?: string;
+      barcode?: string;
+      description?: string;
+      location?: string;
+      vatRate?: number;
+    }) => {
+      try {
+        const item = await createStockItem(garageId, {
+          name: input.name.trim(),
+          reference: input.reference.trim(),
+          purchasePrice: input.purchasePrice,
+          sellingPrice: input.sellingPrice,
+          quantity: input.quantity ?? 0,
+          minQuantity: input.minQuantity ?? 0,
+          brand: input.brand?.trim(),
+          barcode: input.barcode?.trim(),
+          description: input.description?.trim(),
+          location: input.location?.trim(),
+          vatRate: input.vatRate ?? 20,
+          unit: "piece",
+        });
+        return JSON.stringify({
+          id: item.id,
+          name: item.name,
+          reference: item.reference,
+          quantity: item.quantity,
+          href: `/stock/${item.id}`,
+          label: `Voir l'article — ${item.name} (${item.reference})`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] create_stock_item error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la création de l'article : ${message}` });
+      }
+    },
+    {
+      name: "create_stock_item",
+      description: "Crée un nouvel article en stock.",
+      schema: z.object({
+        name: z.string().min(1).describe("Désignation de l'article"),
+        reference: z.string().min(1).describe("Référence de l'article"),
+        purchasePrice: z.number().min(0).optional().describe("Prix d'achat HT en euros"),
+        sellingPrice: z.number().min(0).describe("Prix de vente HT en euros"),
+        quantity: z.number().int().min(0).optional().describe("Quantité initiale en stock (défaut: 0)"),
+        minQuantity: z.number().int().min(0).optional().describe("Seuil d'alerte stock bas (défaut: 0)"),
+        brand: z.string().optional().describe("Marque de l'article"),
+        barcode: z.string().optional().describe("Code-barres"),
+        description: z.string().optional().describe("Description de l'article"),
+        location: z.string().optional().describe("Emplacement dans le stock"),
+        vatRate: z.number().min(0).max(100).optional().describe("Taux de TVA en % (défaut: 20)"),
+      }),
+    },
+  );
+
+  const updateStockItemTool = tool(
+    async (input: {
+      stockItemId: string;
+      name?: string;
+      reference?: string;
+      purchasePrice?: number;
+      sellingPrice?: number;
+      quantity?: number;
+      minQuantity?: number;
+      brand?: string;
+      barcode?: string;
+      description?: string;
+      location?: string;
+      vatRate?: number;
+    }) => {
+      const { stockItemId, ...fields } = input;
+      const data: Record<string, unknown> = {};
+      if (fields.name !== undefined) data.name = fields.name.trim();
+      if (fields.reference !== undefined) data.reference = fields.reference.trim();
+      if (fields.purchasePrice !== undefined) data.purchasePrice = fields.purchasePrice;
+      if (fields.sellingPrice !== undefined) data.sellingPrice = fields.sellingPrice;
+      if (fields.quantity !== undefined) data.quantity = fields.quantity;
+      if (fields.minQuantity !== undefined) data.minQuantity = fields.minQuantity;
+      if (fields.brand !== undefined) data.brand = fields.brand.trim();
+      if (fields.barcode !== undefined) data.barcode = fields.barcode.trim();
+      if (fields.description !== undefined) data.description = fields.description.trim();
+      if (fields.location !== undefined) data.location = fields.location.trim();
+      if (fields.vatRate !== undefined) data.vatRate = fields.vatRate;
+
+      try {
+        const updated = await updateStockItem(garageId, stockItemId, data);
+        if (!updated) return JSON.stringify({ error: "Article non trouvé." });
+        return JSON.stringify({
+          id: updated.id,
+          name: updated.name,
+          reference: updated.reference,
+          quantity: updated.quantity,
+          href: `/stock/${updated.id}`,
+          label: `Voir l'article — ${updated.name} (${updated.reference})`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] update_stock_item error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la modification de l'article : ${message}` });
+      }
+    },
+    {
+      name: "update_stock_item",
+      description: "Modifie un article en stock existant.",
+      schema: z.object({
+        stockItemId: z.string().describe("UUID de l'article"),
+        name: z.string().optional().describe("Nouvelle désignation"),
+        reference: z.string().optional().describe("Nouvelle référence"),
+        purchasePrice: z.number().min(0).optional().describe("Nouveau prix d'achat HT"),
+        sellingPrice: z.number().min(0).optional().describe("Nouveau prix de vente HT"),
+        quantity: z.number().int().min(0).optional().describe("Nouvelle quantité"),
+        minQuantity: z.number().int().min(0).optional().describe("Nouveau seuil d'alerte"),
+        brand: z.string().optional().describe("Nouvelle marque"),
+        barcode: z.string().optional().describe("Nouveau code-barres"),
+        description: z.string().optional().describe("Nouvelle description"),
+        location: z.string().optional().describe("Nouvel emplacement"),
+        vatRate: z.number().min(0).max(100).optional().describe("Nouveau taux de TVA en %"),
+      }),
+    },
+  );
+
   return {
     createCustomer: createCustomerTool,
     createVehicle: createVehicleTool,
     createRepairOrder: createRepairOrderTool,
     createQuoteDraft: createQuoteDraftTool,
     updateRepairOrderStatus: updateRepairOrderStatusTool,
+    updateCustomer: updateCustomerTool,
+    updateVehicle: updateVehicleTool,
+    createStockItem: createStockItemTool,
+    updateStockItem: updateStockItemTool,
   };
 }

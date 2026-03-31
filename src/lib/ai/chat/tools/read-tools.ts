@@ -6,7 +6,7 @@ import { repairOrders, customers, vehicles } from "@/lib/db/schema";
 import { searchCustomers, getCustomerWithVehicles } from "@/server/services/customer.service";
 import { getRepairOrderById } from "@/server/services/repair-order.service";
 import { searchVehicles } from "@/server/services/vehicle.service";
-import { getStockItems } from "@/server/services/stock.service";
+import { getStockItems, getStockItemById } from "@/server/services/stock.service";
 import { getDashboardKPIs } from "@/server/services/dashboard.service";
 import type { ToolContext } from "../types";
 
@@ -228,12 +228,45 @@ export function createReadTools(ctx: ToolContext) {
     },
   );
 
+  const getStockItemTool = tool(
+    async (input: { stockItemId: string }) => {
+      const item = await getStockItemById(garageId, input.stockItemId);
+      if (!item) return JSON.stringify({ error: "Article non trouvé" });
+      return JSON.stringify({
+        id: item.id,
+        name: item.name,
+        reference: item.reference,
+        barcode: item.barcode,
+        brand: item.brand,
+        description: item.description,
+        purchasePrice: item.purchasePrice,
+        sellingPrice: item.sellingPrice,
+        vatRate: item.vatRate,
+        quantity: item.quantity,
+        minQuantity: item.minQuantity,
+        maxQuantity: item.maxQuantity,
+        location: item.location,
+        unit: item.unit,
+        isLowStock: Number(item.quantity) <= Number(item.minQuantity),
+        href: `/stock/${item.id}`,
+      });
+    },
+    {
+      name: "get_stock_item",
+      description: "Récupère les détails complets d'un article en stock par son ID.",
+      schema: z.object({
+        stockItemId: z.string().describe("UUID de l'article"),
+      }),
+    },
+  );
+
   return {
     searchCustomers: searchCustomersTool,
     getCustomer: getCustomerTool,
     searchRepairOrders: searchRepairOrdersTool,
     getRepairOrder: getRepairOrderTool,
     searchStock: searchStockTool,
+    getStockItem: getStockItemTool,
     getDashboardKpis: getDashboardKpisTool,
     searchVehicles: searchVehiclesTool,
   };

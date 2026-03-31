@@ -5,7 +5,8 @@ function buildRoleCapabilities(role: UserRole): string {
   const lines: string[] = [];
 
   if (hasPermission(role, "customers:view")) lines.push("- Rechercher et consulter les clients");
-  if (hasPermission(role, "customers:edit")) lines.push("- Créer des clients et des véhicules");
+  if (hasPermission(role, "customers:edit"))
+    lines.push("- Créer et modifier des clients et des véhicules");
   if (hasPermission(role, "repair-orders:view"))
     lines.push("- Rechercher et consulter les interventions");
   if (hasPermission(role, "repair-orders:edit"))
@@ -13,7 +14,7 @@ function buildRoleCapabilities(role: UserRole): string {
   if (hasPermission(role, "quotes:view")) lines.push("- Rechercher et consulter les devis");
   if (hasPermission(role, "quotes:edit")) lines.push("- Créer des devis (brouillons)");
   if (hasPermission(role, "stock:view")) lines.push("- Rechercher et consulter le stock");
-  if (hasPermission(role, "stock:edit")) lines.push("- Créer des articles en stock");
+  if (hasPermission(role, "stock:edit")) lines.push("- Créer et modifier des articles en stock");
   if (hasPermission(role, "dashboard:view")) lines.push("- Consulter les KPIs du tableau de bord");
   if (hasPermission(role, "catalog:view")) lines.push("- Consulter le catalogue pièces");
 
