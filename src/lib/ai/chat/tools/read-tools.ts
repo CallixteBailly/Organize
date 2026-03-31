@@ -18,10 +18,21 @@ export function createReadTools(ctx: ToolContext) {
   const { garageId } = ctx;
 
   const searchCustomersTool = tool(
-    async (input: { query: string }) => {
-      const results = await searchCustomers(garageId, input.query);
+    async (input: { query?: string }) => {
+      let results;
+      if (input.query && input.query.length >= 2) {
+        results = await searchCustomers(garageId, input.query);
+      } else {
+        // Lister les clients récents sans filtre
+        results = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.garageId, garageId))
+          .orderBy(desc(customers.createdAt))
+          .limit(10);
+      }
       return JSON.stringify(
-        results.slice(0, 5).map((c) => ({
+        results.slice(0, 10).map((c) => ({
           id: c.id,
           type: c.type,
           name:
@@ -36,9 +47,10 @@ export function createReadTools(ctx: ToolContext) {
     },
     {
       name: "search_customers",
-      description: "Recherche des clients par nom, prénom, entreprise, email ou téléphone.",
+      description:
+        "Recherche des clients par nom, prénom, entreprise, email ou téléphone. Sans query, liste les clients récents.",
       schema: z.object({
-        query: z.string().min(2).describe("Terme de recherche"),
+        query: z.string().optional().describe("Terme de recherche (optionnel pour lister tous)"),
       }),
     },
   );
@@ -209,10 +221,20 @@ export function createReadTools(ctx: ToolContext) {
   );
 
   const searchVehiclesTool = tool(
-    async (input: { query: string }) => {
-      const results = await searchVehicles(garageId, input.query);
+    async (input: { query?: string }) => {
+      let results;
+      if (input.query && input.query.length >= 2) {
+        results = await searchVehicles(garageId, input.query);
+      } else {
+        results = await db
+          .select()
+          .from(vehicles)
+          .where(eq(vehicles.garageId, garageId))
+          .orderBy(desc(vehicles.createdAt))
+          .limit(10);
+      }
       return JSON.stringify(
-        results.slice(0, 5).map((v) => ({
+        results.slice(0, 10).map((v) => ({
           id: v.id,
           plate: v.licensePlate,
           brand: v.brand,
@@ -225,9 +247,10 @@ export function createReadTools(ctx: ToolContext) {
     },
     {
       name: "search_vehicles",
-      description: "Recherche des véhicules par immatriculation, marque ou modèle.",
+      description:
+        "Recherche des véhicules par immatriculation, marque ou modèle. Sans query, liste les véhicules récents.",
       schema: z.object({
-        query: z.string().min(2).describe("Plaque, marque ou modèle"),
+        query: z.string().optional().describe("Plaque, marque ou modèle (optionnel pour lister tous)"),
       }),
     },
   );
