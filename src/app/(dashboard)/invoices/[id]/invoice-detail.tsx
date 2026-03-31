@@ -111,7 +111,7 @@ export function InvoiceDetail({ data, userRole }: Props) {
     setFinalizing(true);
     const result = await finalizeInvoiceAction(inv.id);
     setFinalizing(false);
-    if (result.success) toast.success("Facture finalisee — hash NF525 genere");
+    if (result.success) toast.success("Facture finalisee");
     else toast.error(result.error ?? "Erreur");
   }
 
@@ -161,13 +161,13 @@ export function InvoiceDetail({ data, userRole }: Props) {
         {inv.nf525Hash && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
             <Hash className="h-3 w-3" />
-            NF525 #{inv.nf525Sequence}
+            #{inv.nf525Sequence}
           </span>
         )}
         <div className="flex-1" />
         {canFinalize && (
           <Button onClick={handleFinalize} disabled={finalizing}>
-            {finalizing ? <Spinner className="h-4 w-4" /> : <><Lock className="h-4 w-4" /> Finaliser (NF525)</>}
+            {finalizing ? <Spinner className="h-4 w-4" /> : <><Lock className="h-4 w-4" /> Finaliser</>}
           </Button>
         )}
         {canPay && (

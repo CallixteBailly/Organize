@@ -45,9 +45,12 @@ export default function NewRepairOrderPage() {
   async function selectCustomer(c: Customer) {
     setSelectedCustomer(c);
     setCustomers([]);
-    // Fetch vehicles for this customer - using a simple approach
-    // In a real app we'd have a dedicated API endpoint
-    setVehicles([]);
+    try {
+      const res = await fetch(`/api/customers/${c.id}/vehicles`);
+      if (res.ok) setVehicles(await res.json());
+    } catch {
+      setVehicles([]);
+    }
   }
 
   const customerName = selectedCustomer
@@ -116,7 +119,12 @@ export default function NewRepairOrderPage() {
                     ))}
                   </select>
                 ) : (
-                  <Input id="ro-vehicle" name="vehicleId" placeholder="ID du vehicule (temporaire)" required />
+                  <p className="text-sm text-muted-foreground">
+                    Aucun vehicule enregistre pour ce client.{" "}
+                    <a href={`/customers/${selectedCustomer.id}`} className="text-primary underline">
+                      Ajouter un vehicule
+                    </a>
+                  </p>
                 )}
               </div>
 
