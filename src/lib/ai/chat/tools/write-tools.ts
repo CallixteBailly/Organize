@@ -6,7 +6,7 @@ import { createVehicle, updateVehicle } from "@/server/services/vehicle.service"
 import { createRepairOrder, updateRepairOrder } from "@/server/services/repair-order.service";
 import { createQuote } from "@/server/services/quote.service";
 import { createStockItem, updateStockItem } from "@/server/services/stock.service";
-import { createInvoice } from "@/server/services/invoice.service";
+import { createInvoice, addInvoiceLine } from "@/server/services/invoice.service";
 import { updateOrderStatus } from "@/server/services/order.service";
 import { createSupplier, updateSupplier } from "@/server/services/supplier.service";
 import { db } from "@/lib/db";
@@ -591,6 +591,7 @@ export function createWriteTools(ctx: ToolContext) {
       repairOrderId?: string;
       notes?: string;
       paymentTerms?: string;
+      lines?: { type: "part" | "labor" | "other"; description: string; quantity: number; unitPrice: number; vatRate?: number }[];
     }) => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 30);
@@ -603,9 +604,26 @@ export function createWriteTools(ctx: ToolContext) {
           notes: input.notes?.trim(),
           paymentTerms: input.paymentTerms?.trim(),
         });
+
+        // Ajouter les lignes si fournies
+        if (input.lines && input.lines.length > 0) {
+          for (const line of input.lines) {
+            await addInvoiceLine(garageId, {
+              invoiceId: invoice.id,
+              type: line.type,
+              description: line.description,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              vatRate: line.vatRate ?? 20,
+              discountPercent: 0,
+            });
+          }
+        }
+
         return JSON.stringify({
           id: invoice.id,
           number: invoice.invoiceNumber,
+          linesCount: input.lines?.length ?? 0,
           href: `/invoices/${invoice.id}`,
           label: `Voir la facture — ${invoice.invoiceNumber}`,
         });
@@ -618,12 +636,19 @@ export function createWriteTools(ctx: ToolContext) {
     {
       name: "create_invoice",
       description:
-        "Crée une facture brouillon pour un client. L'échéance est fixée à 30 jours par défaut. NE JAMAIS finaliser une facture.",
+        "Crée une facture brouillon pour un client avec ses lignes. L'échéance est fixée à 30 jours par défaut. NE JAMAIS finaliser une facture.",
       schema: z.object({
         customerId: z.string().describe("UUID du client"),
         repairOrderId: z.string().optional().describe("UUID de l'intervention liée (optionnel)"),
         notes: z.string().optional().describe("Notes sur la facture"),
         paymentTerms: z.string().optional().describe("Conditions de paiement"),
+        lines: z.array(z.object({
+          type: z.enum(["part", "labor", "other"]).describe("Type : part (pièce), labor (main d'oeuvre), other"),
+          description: z.string().describe("Description de la prestation ou pièce"),
+          quantity: z.number().describe("Quantité"),
+          unitPrice: z.number().describe("Prix unitaire HT"),
+          vatRate: z.number().optional().describe("Taux de TVA en % (défaut 20)"),
+        })).optional().describe("Lignes de la facture"),
       }),
     },
   );

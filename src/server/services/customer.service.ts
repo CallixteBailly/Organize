@@ -32,20 +32,24 @@ export async function getCustomers(garageId: string, pagination: PaginationInput
 }
 
 export async function searchCustomers(garageId: string, query: string) {
-  const pattern = `%${query}%`;
+  const words = query.trim().split(/\s+/).filter(Boolean);
+  const conditions = words.flatMap((word) => {
+    const pattern = `%${word}%`;
+    return [
+      ilike(customers.firstName, pattern),
+      ilike(customers.lastName, pattern),
+      ilike(customers.companyName, pattern),
+      ilike(customers.phone, pattern),
+      ilike(customers.email, pattern),
+    ];
+  });
   return db
     .select()
     .from(customers)
     .where(
       and(
         eq(customers.garageId, garageId),
-        or(
-          ilike(customers.firstName, pattern),
-          ilike(customers.lastName, pattern),
-          ilike(customers.companyName, pattern),
-          ilike(customers.phone, pattern),
-          ilike(customers.email, pattern),
-        ),
+        or(...conditions),
       ),
     )
     .limit(20);

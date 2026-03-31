@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency } from "@/lib/utils/format";
-import { Plus, Trash2, CheckCircle, List, Zap, Loader2, BookOpen, Sparkles } from "lucide-react";
+import { Plus, Trash2, CheckCircle, List, Zap, Loader2, BookOpen, Sparkles, FileText } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -18,8 +18,10 @@ import {
   closeRepairOrderAction,
   type RepairOrderActionState,
 } from "@/server/actions/repair-orders";
+import { generateFromRepairOrderAction } from "@/server/actions/invoices";
 import { useAI } from "@/components/ai/ai-provider";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "success" | "warning" | "destructive" }> = {
   draft: { label: "Brouillon", variant: "secondary" },
@@ -84,11 +86,14 @@ const addLineInitial: RepairOrderActionState = { success: false };
 
 export function RepairOrderDetail({ data }: Props) {
   const { repairOrder: ro, lines } = data;
+  const router = useRouter();
   const status = statusConfig[ro.status] ?? statusConfig.draft;
   const isEditable = !["completed", "invoiced", "cancelled"].includes(ro.status);
+  const canGenerateInvoice = ro.status === "completed";
 
   const [addLineState, addLineFormAction, addLinePending] = useActionState(addLineAction, addLineInitial);
   const [closing, setClosing] = useState(false);
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [suggestedDiagnosis, setSuggestedDiagnosis] = useState<string | null>(null);
   const { isEnabled: aiEnabled } = useAI();
@@ -102,8 +107,28 @@ export function RepairOrderDetail({ data }: Props) {
     setClosing(true);
     const result = await closeRepairOrderAction(ro.id);
     setClosing(false);
-    if (result.success) toast.success("OR cloture — stock mis a jour");
-    else toast.error(result.error ?? "Erreur");
+    if (result.success) {
+      if (result.repairOrderId) {
+        toast.success("OR cloture — facture generee");
+        router.push(`/invoices/${result.repairOrderId}`);
+      } else {
+        toast.success("OR cloture — stock mis a jour");
+      }
+    } else {
+      toast.error(result.error ?? "Erreur");
+    }
+  }
+
+  async function handleGenerateInvoice() {
+    setGeneratingInvoice(true);
+    const result = await generateFromRepairOrderAction(ro.id);
+    setGeneratingInvoice(false);
+    if (result.success && result.invoiceId) {
+      toast.success("Facture generee");
+      router.push(`/invoices/${result.invoiceId}`);
+    } else {
+      toast.error(result.error ?? "Erreur");
+    }
   }
 
   async function handleRemoveLine(lineId: string) {
@@ -177,6 +202,11 @@ export function RepairOrderDetail({ data }: Props) {
         {isEditable && (
           <Button onClick={handleClose} disabled={closing}>
             {closing ? <Spinner className="h-4 w-4" /> : <><CheckCircle className="h-4 w-4" /> Cloturer l&apos;OR</>}
+          </Button>
+        )}
+        {canGenerateInvoice && (
+          <Button onClick={handleGenerateInvoice} disabled={generatingInvoice}>
+            {generatingInvoice ? <Spinner className="h-4 w-4" /> : <><FileText className="h-4 w-4" /> Generer la facture</>}
           </Button>
         )}
       </div>
