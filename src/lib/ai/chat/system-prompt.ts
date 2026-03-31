@@ -10,11 +10,18 @@ function buildRoleCapabilities(role: UserRole): string {
   if (hasPermission(role, "repair-orders:view"))
     lines.push("- Rechercher et consulter les interventions");
   if (hasPermission(role, "repair-orders:edit"))
-    lines.push("- Créer des interventions et mettre à jour leur statut");
+    lines.push("- Créer et modifier des interventions, mettre à jour leur statut");
   if (hasPermission(role, "quotes:view")) lines.push("- Rechercher et consulter les devis");
   if (hasPermission(role, "quotes:edit")) lines.push("- Créer des devis (brouillons)");
   if (hasPermission(role, "stock:view")) lines.push("- Rechercher et consulter le stock");
   if (hasPermission(role, "stock:edit")) lines.push("- Créer et modifier des articles en stock");
+  if (hasPermission(role, "invoices:view")) lines.push("- Rechercher et consulter les factures");
+  if (hasPermission(role, "invoices:create"))
+    lines.push("- Créer des factures brouillon (sans finalisation)");
+  if (hasPermission(role, "orders:create") || hasPermission(role, "orders:manage"))
+    lines.push("- Rechercher et consulter les commandes fournisseurs et fournisseurs");
+  if (hasPermission(role, "orders:manage"))
+    lines.push("- Créer et modifier des fournisseurs, mettre à jour le statut des commandes");
   if (hasPermission(role, "dashboard:view")) lines.push("- Consulter les KPIs du tableau de bord");
   if (hasPermission(role, "catalog:view")) lines.push("- Consulter le catalogue pièces");
 

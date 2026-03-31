@@ -3,9 +3,12 @@ import { z } from "zod/v4";
 import { eq, and, inArray } from "drizzle-orm";
 import { createCustomer, updateCustomer } from "@/server/services/customer.service";
 import { createVehicle, updateVehicle } from "@/server/services/vehicle.service";
-import { createRepairOrder } from "@/server/services/repair-order.service";
+import { createRepairOrder, updateRepairOrder } from "@/server/services/repair-order.service";
 import { createQuote } from "@/server/services/quote.service";
 import { createStockItem, updateStockItem } from "@/server/services/stock.service";
+import { createInvoice } from "@/server/services/invoice.service";
+import { updateOrderStatus } from "@/server/services/order.service";
+import { createSupplier, updateSupplier } from "@/server/services/supplier.service";
 import { db } from "@/lib/db";
 import { repairOrders } from "@/lib/db/schema";
 import type { ToolContext } from "../types";
@@ -482,6 +485,232 @@ export function createWriteTools(ctx: ToolContext) {
     },
   );
 
+  const updateRepairOrderTool = tool(
+    async (input: {
+      repairOrderId: string;
+      diagnosis?: string;
+      workPerformed?: string;
+      customerComplaint?: string;
+    }) => {
+      const { repairOrderId, ...fields } = input;
+      const data: Record<string, unknown> = {};
+      if (fields.diagnosis !== undefined) data.diagnosis = fields.diagnosis.trim();
+      if (fields.workPerformed !== undefined) data.workPerformed = fields.workPerformed.trim();
+      if (fields.customerComplaint !== undefined) data.customerComplaint = fields.customerComplaint.trim();
+
+      try {
+        const updated = await updateRepairOrder(garageId, repairOrderId, data);
+        if (!updated) return JSON.stringify({ error: "Intervention non trouvée." });
+        return JSON.stringify({
+          id: updated.id,
+          number: updated.repairOrderNumber,
+          status: updated.status,
+          href: `/repair-orders/${updated.id}`,
+          label: `Voir l'intervention — ${updated.repairOrderNumber}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] update_repair_order error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la modification : ${message}` });
+      }
+    },
+    {
+      name: "update_repair_order",
+      description:
+        "Modifie une intervention existante (diagnostic, travaux effectués, plainte client).",
+      schema: z.object({
+        repairOrderId: z.string().describe("UUID de l'intervention"),
+        diagnosis: z.string().optional().describe("Nouveau diagnostic"),
+        workPerformed: z.string().optional().describe("Travaux effectués"),
+        customerComplaint: z.string().optional().describe("Nouvelle plainte client"),
+      }),
+    },
+  );
+
+  const createInvoiceTool = tool(
+    async (input: {
+      customerId: string;
+      repairOrderId?: string;
+      notes?: string;
+      paymentTerms?: string;
+    }) => {
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+
+      try {
+        const invoice = await createInvoice(garageId, userId, {
+          customerId: input.customerId,
+          repairOrderId: input.repairOrderId,
+          dueDate,
+          notes: input.notes?.trim(),
+          paymentTerms: input.paymentTerms?.trim(),
+        });
+        return JSON.stringify({
+          id: invoice.id,
+          number: invoice.invoiceNumber,
+          href: `/invoices/${invoice.id}`,
+          label: `Voir la facture — ${invoice.invoiceNumber}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] create_invoice error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la création de la facture : ${message}` });
+      }
+    },
+    {
+      name: "create_invoice",
+      description:
+        "Crée une facture brouillon pour un client. L'échéance est fixée à 30 jours par défaut. NE JAMAIS finaliser une facture.",
+      schema: z.object({
+        customerId: z.string().describe("UUID du client"),
+        repairOrderId: z.string().optional().describe("UUID de l'intervention liée (optionnel)"),
+        notes: z.string().optional().describe("Notes sur la facture"),
+        paymentTerms: z.string().optional().describe("Conditions de paiement"),
+      }),
+    },
+  );
+
+  const createSupplierTool = tool(
+    async (input: {
+      name: string;
+      code?: string;
+      contactName?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      website?: string;
+      deliveryDays?: number;
+    }) => {
+      try {
+        const supplier = await createSupplier(garageId, {
+          name: input.name.trim(),
+          code: input.code?.trim(),
+          contactName: input.contactName?.trim(),
+          email: input.email?.trim().toLowerCase(),
+          phone: input.phone ? sanitizePhone(input.phone) : undefined,
+          address: input.address?.trim(),
+          website: input.website?.trim(),
+          deliveryDays: input.deliveryDays,
+        });
+        return JSON.stringify({
+          id: supplier.id,
+          name: supplier.name,
+          href: `/settings/suppliers`,
+          label: `Voir les fournisseurs — ${supplier.name}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] create_supplier error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la création du fournisseur : ${message}` });
+      }
+    },
+    {
+      name: "create_supplier",
+      description: "Crée un nouveau fournisseur.",
+      schema: z.object({
+        name: z.string().min(1).describe("Nom du fournisseur"),
+        code: z.string().optional().describe("Code fournisseur"),
+        contactName: z.string().optional().describe("Nom du contact"),
+        email: z.string().optional().describe("Email"),
+        phone: z.string().optional().describe("Téléphone"),
+        address: z.string().optional().describe("Adresse"),
+        website: z.string().optional().describe("Site web"),
+        deliveryDays: z.number().int().min(0).optional().describe("Délai de livraison en jours"),
+      }),
+    },
+  );
+
+  const updateSupplierTool = tool(
+    async (input: {
+      supplierId: string;
+      name?: string;
+      code?: string;
+      contactName?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      website?: string;
+      deliveryDays?: number;
+    }) => {
+      const { supplierId, ...fields } = input;
+      const data: Record<string, unknown> = {};
+      if (fields.name !== undefined) data.name = fields.name.trim();
+      if (fields.code !== undefined) data.code = fields.code.trim();
+      if (fields.contactName !== undefined) data.contactName = fields.contactName.trim();
+      if (fields.email !== undefined) data.email = fields.email.trim().toLowerCase();
+      if (fields.phone !== undefined) data.phone = sanitizePhone(fields.phone);
+      if (fields.address !== undefined) data.address = fields.address.trim();
+      if (fields.website !== undefined) data.website = fields.website.trim();
+      if (fields.deliveryDays !== undefined) data.deliveryDays = fields.deliveryDays;
+
+      try {
+        const updated = await updateSupplier(garageId, supplierId, data);
+        if (!updated) return JSON.stringify({ error: "Fournisseur non trouvé." });
+        return JSON.stringify({
+          id: updated.id,
+          name: updated.name,
+          href: `/settings/suppliers`,
+          label: `Voir les fournisseurs — ${updated.name}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] update_supplier error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la modification du fournisseur : ${message}` });
+      }
+    },
+    {
+      name: "update_supplier",
+      description: "Modifie les informations d'un fournisseur existant.",
+      schema: z.object({
+        supplierId: z.string().describe("UUID du fournisseur"),
+        name: z.string().optional().describe("Nouveau nom"),
+        code: z.string().optional().describe("Nouveau code"),
+        contactName: z.string().optional().describe("Nouveau nom de contact"),
+        email: z.string().optional().describe("Nouvel email"),
+        phone: z.string().optional().describe("Nouveau téléphone"),
+        address: z.string().optional().describe("Nouvelle adresse"),
+        website: z.string().optional().describe("Nouveau site web"),
+        deliveryDays: z.number().int().min(0).optional().describe("Nouveau délai de livraison"),
+      }),
+    },
+  );
+
+  const SAFE_ORDER_STATUSES = ["confirmed", "shipped", "delivered", "cancelled"] as const;
+
+  const updateOrderStatusTool = tool(
+    async (input: {
+      orderId: string;
+      status: (typeof SAFE_ORDER_STATUSES)[number];
+    }) => {
+      try {
+        const updated = await updateOrderStatus(garageId, input.orderId, input.status);
+        if (!updated) return JSON.stringify({ error: "Commande non trouvée." });
+        return JSON.stringify({
+          id: updated.id,
+          number: updated.orderNumber,
+          newStatus: updated.status,
+          href: `/orders/${updated.id}`,
+          label: `Voir la commande — ${updated.orderNumber}`,
+        });
+      } catch (error) {
+        console.error("[AI Tool] update_order_status error:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        return JSON.stringify({ error: `Echec de la mise à jour : ${message}` });
+      }
+    },
+    {
+      name: "update_order_status",
+      description:
+        "Met à jour le statut d'une commande fournisseur. Statuts : confirmed, shipped, delivered, cancelled.",
+      schema: z.object({
+        orderId: z.string().describe("UUID de la commande"),
+        status: z
+          .enum(SAFE_ORDER_STATUSES)
+          .describe("Nouveau statut : confirmed | shipped | delivered | cancelled"),
+      }),
+    },
+  );
+
   return {
     createCustomer: createCustomerTool,
     createVehicle: createVehicleTool,
@@ -492,5 +721,10 @@ export function createWriteTools(ctx: ToolContext) {
     updateVehicle: updateVehicleTool,
     createStockItem: createStockItemTool,
     updateStockItem: updateStockItemTool,
+    updateRepairOrder: updateRepairOrderTool,
+    createInvoice: createInvoiceTool,
+    createSupplier: createSupplierTool,
+    updateSupplier: updateSupplierTool,
+    updateOrderStatus: updateOrderStatusTool,
   };
 }

@@ -7,6 +7,10 @@ import { searchCustomers, getCustomerWithVehicles } from "@/server/services/cust
 import { getRepairOrderById } from "@/server/services/repair-order.service";
 import { searchVehicles } from "@/server/services/vehicle.service";
 import { getStockItems, getStockItemById } from "@/server/services/stock.service";
+import { getQuotes, getQuoteById } from "@/server/services/quote.service";
+import { getInvoices, getInvoiceById } from "@/server/services/invoice.service";
+import { getOrders, getOrderById } from "@/server/services/order.service";
+import { getSuppliers, getSupplierById } from "@/server/services/supplier.service";
 import { getDashboardKPIs } from "@/server/services/dashboard.service";
 import type { ToolContext } from "../types";
 
@@ -260,6 +264,223 @@ export function createReadTools(ctx: ToolContext) {
     },
   );
 
+  const searchQuotesTool = tool(
+    async (input: { status?: string; limit?: number }) => {
+      const limit = Math.min(input.limit ?? 5, 10);
+      const { items } = await getQuotes(garageId, { page: 1, limit });
+      const filtered = input.status
+        ? items.filter((i) => i.quote.status === input.status)
+        : items;
+      return JSON.stringify(
+        filtered.map((i) => ({
+          id: i.quote.id,
+          number: i.quote.quoteNumber,
+          status: i.quote.status,
+          customer: [i.customerFirstName, i.customerLastName, i.customerCompanyName]
+            .filter(Boolean)
+            .join(" "),
+          totalTtc: i.quote.totalTtc,
+          validUntil: i.quote.validUntil,
+          href: `/quotes/${i.quote.id}`,
+        })),
+      );
+    },
+    {
+      name: "search_quotes",
+      description:
+        "Liste les devis récents, avec filtre optionnel par statut. Statuts : draft, sent, accepted, rejected, expired, converted.",
+      schema: z.object({
+        status: z.string().optional().describe("Filtre par statut (optionnel)"),
+        limit: z.number().int().min(1).max(10).optional().describe("Nombre max de résultats (défaut: 5)"),
+      }),
+    },
+  );
+
+  const getQuoteTool = tool(
+    async (input: { quoteId: string }) => {
+      const data = await getQuoteById(garageId, input.quoteId);
+      if (!data) return JSON.stringify({ error: "Devis non trouvé" });
+      return JSON.stringify({
+        id: data.quote.id,
+        number: data.quote.quoteNumber,
+        status: data.quote.status,
+        customer: [data.customerFirstName, data.customerLastName, data.customerCompanyName]
+          .filter(Boolean)
+          .join(" "),
+        totalHt: data.quote.totalHt,
+        totalTtc: data.quote.totalTtc,
+        validUntil: data.quote.validUntil,
+        notes: data.quote.notes,
+        linesCount: data.lines?.length ?? 0,
+        href: `/quotes/${data.quote.id}`,
+      });
+    },
+    {
+      name: "get_quote",
+      description: "Récupère les détails complets d'un devis par son ID.",
+      schema: z.object({
+        quoteId: z.string().describe("UUID du devis"),
+      }),
+    },
+  );
+
+  const searchInvoicesTool = tool(
+    async (input: { status?: string; limit?: number }) => {
+      const limit = Math.min(input.limit ?? 5, 10);
+      const { items } = await getInvoices(garageId, { page: 1, limit });
+      const filtered = input.status
+        ? items.filter((i) => i.status === input.status)
+        : items;
+      return JSON.stringify(
+        filtered.map((i) => ({
+          id: i.id,
+          number: i.invoiceNumber,
+          status: i.status,
+          customerName: i.customerName,
+          totalTtc: i.totalTtc,
+          amountPaid: i.amountPaid,
+          dueDate: i.dueDate,
+          href: `/invoices/${i.id}`,
+        })),
+      );
+    },
+    {
+      name: "search_invoices",
+      description:
+        "Liste les factures récentes, avec filtre optionnel par statut. Statuts : draft, finalized, sent, partially_paid, paid, overdue, cancelled.",
+      schema: z.object({
+        status: z.string().optional().describe("Filtre par statut (optionnel)"),
+        limit: z.number().int().min(1).max(10).optional().describe("Nombre max de résultats (défaut: 5)"),
+      }),
+    },
+  );
+
+  const getInvoiceTool = tool(
+    async (input: { invoiceId: string }) => {
+      const data = await getInvoiceById(garageId, input.invoiceId);
+      if (!data) return JSON.stringify({ error: "Facture non trouvée" });
+      return JSON.stringify({
+        id: data.invoice.id,
+        number: data.invoice.invoiceNumber,
+        status: data.invoice.status,
+        customerName: data.invoice.customerName,
+        totalHt: data.invoice.totalHt,
+        totalTtc: data.invoice.totalTtc,
+        amountPaid: data.invoice.amountPaid,
+        dueDate: data.invoice.dueDate,
+        linesCount: data.lines?.length ?? 0,
+        paymentsCount: data.payments?.length ?? 0,
+        href: `/invoices/${data.invoice.id}`,
+      });
+    },
+    {
+      name: "get_invoice",
+      description: "Récupère les détails complets d'une facture par son ID.",
+      schema: z.object({
+        invoiceId: z.string().describe("UUID de la facture"),
+      }),
+    },
+  );
+
+  const searchOrdersTool = tool(
+    async (input: { limit?: number }) => {
+      const limit = Math.min(input.limit ?? 5, 10);
+      const { items } = await getOrders(garageId, { page: 1, limit });
+      return JSON.stringify(
+        items.map((i) => ({
+          id: i.order.id,
+          number: i.order.orderNumber,
+          status: i.order.status,
+          supplier: i.supplierName,
+          totalTtc: i.order.totalTtc,
+          createdAt: i.order.createdAt,
+          href: `/orders/${i.order.id}`,
+        })),
+      );
+    },
+    {
+      name: "search_orders",
+      description: "Liste les commandes fournisseurs récentes.",
+      schema: z.object({
+        limit: z.number().int().min(1).max(10).optional().describe("Nombre max de résultats (défaut: 5)"),
+      }),
+    },
+  );
+
+  const getOrderTool = tool(
+    async (input: { orderId: string }) => {
+      const data = await getOrderById(garageId, input.orderId);
+      if (!data) return JSON.stringify({ error: "Commande non trouvée" });
+      return JSON.stringify({
+        id: data.order.id,
+        number: data.order.orderNumber,
+        status: data.order.status,
+        supplier: data.supplierName,
+        totalHt: data.order.totalHt,
+        totalTtc: data.order.totalTtc,
+        notes: data.order.notes,
+        itemsCount: data.items?.length ?? 0,
+        deliveredAt: data.order.deliveredAt,
+        href: `/orders/${data.order.id}`,
+      });
+    },
+    {
+      name: "get_order",
+      description: "Récupère les détails complets d'une commande fournisseur par son ID.",
+      schema: z.object({
+        orderId: z.string().describe("UUID de la commande"),
+      }),
+    },
+  );
+
+  const searchSuppliersTool = tool(
+    async () => {
+      const results = await getSuppliers(garageId);
+      return JSON.stringify(
+        results.slice(0, 10).map((s) => ({
+          id: s.id,
+          name: s.name,
+          code: s.code,
+          contactName: s.contactName,
+          email: s.email,
+          phone: s.phone,
+          deliveryDays: s.deliveryDays,
+        })),
+      );
+    },
+    {
+      name: "search_suppliers",
+      description: "Liste les fournisseurs actifs du garage.",
+      schema: z.object({}),
+    },
+  );
+
+  const getSupplierTool = tool(
+    async (input: { supplierId: string }) => {
+      const supplier = await getSupplierById(garageId, input.supplierId);
+      if (!supplier) return JSON.stringify({ error: "Fournisseur non trouvé" });
+      return JSON.stringify({
+        id: supplier.id,
+        name: supplier.name,
+        code: supplier.code,
+        contactName: supplier.contactName,
+        email: supplier.email,
+        phone: supplier.phone,
+        address: supplier.address,
+        website: supplier.website,
+        deliveryDays: supplier.deliveryDays,
+        minOrderAmount: supplier.minOrderAmount,
+      });
+    },
+    {
+      name: "get_supplier",
+      description: "Récupère les détails d'un fournisseur par son ID.",
+      schema: z.object({
+        supplierId: z.string().describe("UUID du fournisseur"),
+      }),
+    },
+  );
+
   return {
     searchCustomers: searchCustomersTool,
     getCustomer: getCustomerTool,
@@ -267,6 +488,14 @@ export function createReadTools(ctx: ToolContext) {
     getRepairOrder: getRepairOrderTool,
     searchStock: searchStockTool,
     getStockItem: getStockItemTool,
+    searchQuotes: searchQuotesTool,
+    getQuote: getQuoteTool,
+    searchInvoices: searchInvoicesTool,
+    getInvoice: getInvoiceTool,
+    searchOrders: searchOrdersTool,
+    getOrder: getOrderTool,
+    searchSuppliers: searchSuppliersTool,
+    getSupplier: getSupplierTool,
     getDashboardKpis: getDashboardKpisTool,
     searchVehicles: searchVehiclesTool,
   };
