@@ -152,11 +152,18 @@ export async function resolveVehicleByModel(
   const cached = await getCachedVehicle(cacheKey);
   if (cached) return cached;
 
-  const { vehicle: vehicleProvider } = getProviders();
+  const { vehicle: vehicleProvider, parts: partsProvider } = getProviders();
 
   let vehicle: CatalogVehicle | null = null;
 
-  if ("searchVehiclesByModel" in vehicleProvider && vehicleProvider.searchVehiclesByModel) {
+  // Essayer d'abord le partsProvider (CustomApiProvider a searchVehiclesByModel avec 82k+ variantes)
+  if ("searchVehiclesByModel" in partsProvider && partsProvider.searchVehiclesByModel) {
+    const results = await partsProvider.searchVehiclesByModel(params);
+    vehicle = results[0] ?? null;
+  }
+
+  // Fallback: vehicleProvider (L'Argus / Mock)
+  if (!vehicle && "searchVehiclesByModel" in vehicleProvider && vehicleProvider.searchVehiclesByModel) {
     const results = await vehicleProvider.searchVehiclesByModel(params);
     vehicle = results[0] ?? null;
   }
