@@ -50,16 +50,73 @@ describe("buildChatSystemPrompt", () => {
     expect(prompt).toContain(id);
   });
 
-  it("owner a les capacités d'écriture", () => {
+  // ── Capacités owner (toutes les permissions) ──
+
+  it("owner a toutes les capacités d'écriture", () => {
     const prompt = buildChatSystemPrompt(base);
-    expect(prompt).toContain("Créer des clients");
-    expect(prompt).toContain("Créer des interventions");
+    expect(prompt).toContain("Créer et modifier des clients");
+    expect(prompt).toContain("Créer et modifier des interventions");
+    expect(prompt).toContain("Créer et modifier des articles en stock");
+    expect(prompt).toContain("Créer des factures brouillon");
+    expect(prompt).toContain("Créer et modifier des fournisseurs");
+    expect(prompt).toContain("Créer des devis");
   });
+
+  it("owner a toutes les capacités de lecture", () => {
+    const prompt = buildChatSystemPrompt(base);
+    expect(prompt).toContain("Rechercher et consulter les clients");
+    expect(prompt).toContain("Rechercher et consulter les interventions");
+    expect(prompt).toContain("Rechercher et consulter le stock");
+    expect(prompt).toContain("Rechercher et consulter les devis");
+    expect(prompt).toContain("Rechercher et consulter les factures");
+    expect(prompt).toContain("commandes fournisseurs");
+    expect(prompt).toContain("KPIs du tableau de bord");
+    expect(prompt).toContain("catalogue pièces");
+  });
+
+  // ── Capacités mechanic (permissions limitées) ──
 
   it("mechanic n'a pas accès au tableau de bord", () => {
     const prompt = buildChatSystemPrompt({ ...base, role: "mechanic" });
     expect(prompt).not.toContain("KPIs du tableau de bord");
   });
+
+  it("mechanic n'a pas accès aux factures en lecture/écriture", () => {
+    const prompt = buildChatSystemPrompt({ ...base, role: "mechanic" });
+    expect(prompt).not.toContain("Rechercher et consulter les factures");
+    expect(prompt).not.toContain("Créer des factures brouillon");
+  });
+
+  it("mechanic n'a pas accès aux devis en lecture/écriture", () => {
+    const prompt = buildChatSystemPrompt({ ...base, role: "mechanic" });
+    expect(prompt).not.toContain("Rechercher et consulter les devis");
+    expect(prompt).not.toContain("Créer des devis");
+  });
+
+  it("mechanic a accès aux clients et interventions", () => {
+    const prompt = buildChatSystemPrompt({ ...base, role: "mechanic" });
+    expect(prompt).toContain("Créer et modifier des clients");
+    expect(prompt).toContain("Créer et modifier des interventions");
+  });
+
+  it("mechanic n'a pas accès à la modification du stock", () => {
+    const prompt = buildChatSystemPrompt({ ...base, role: "mechanic" });
+    expect(prompt).not.toContain("Créer et modifier des articles en stock");
+    // Mais a la consultation
+    expect(prompt).toContain("Rechercher et consulter le stock");
+  });
+
+  // ── Capacités secretary ──
+
+  it("secretary a accès aux factures, devis, stock, fournisseurs", () => {
+    const prompt = buildChatSystemPrompt({ ...base, role: "secretary" });
+    expect(prompt).toContain("Créer des factures brouillon");
+    expect(prompt).toContain("Créer des devis");
+    expect(prompt).toContain("Créer et modifier des articles en stock");
+    expect(prompt).toContain("Créer et modifier des fournisseurs");
+  });
+
+  // ── Règles générales ──
 
   it("est en français", () => {
     const prompt = buildChatSystemPrompt(base);
@@ -70,5 +127,15 @@ describe("buildChatSystemPrompt", () => {
     const prompt = buildChatSystemPrompt(base);
     expect(prompt).toContain("PÉRIMÈTRE STRICT");
     expect(prompt).toContain("gestion du garage");
+  });
+
+  it("interdit la finalisation de factures", () => {
+    const prompt = buildChatSystemPrompt(base);
+    expect(prompt).toContain("Ne jamais finaliser de factures");
+  });
+
+  it("interdit la suppression de données", () => {
+    const prompt = buildChatSystemPrompt(base);
+    expect(prompt).toContain("Ne jamais supprimer de données");
   });
 });

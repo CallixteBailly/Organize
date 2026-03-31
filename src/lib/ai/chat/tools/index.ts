@@ -39,7 +39,10 @@ export function getToolsForContext(ctx: ToolContext, options?: { planningMode?: 
   const hasWriteAccess =
     hasPermission(role, "customers:edit") ||
     hasPermission(role, "repair-orders:edit") ||
-    hasPermission(role, "quotes:edit");
+    hasPermission(role, "quotes:edit") ||
+    hasPermission(role, "stock:edit") ||
+    hasPermission(role, "invoices:create") ||
+    hasPermission(role, "orders:manage");
 
   // Read tools — selon les permissions de lecture
   if (hasPermission(role, "customers:view")) {
@@ -49,7 +52,16 @@ export function getToolsForContext(ctx: ToolContext, options?: { planningMode?: 
     tools.push(read.searchRepairOrders, read.getRepairOrder);
   }
   if (hasPermission(role, "stock:view")) {
-    tools.push(read.searchStock);
+    tools.push(read.searchStock, read.getStockItem);
+  }
+  if (hasPermission(role, "quotes:view")) {
+    tools.push(read.searchQuotes, read.getQuote);
+  }
+  if (hasPermission(role, "invoices:view")) {
+    tools.push(read.searchInvoices, read.getInvoice);
+  }
+  if (hasPermission(role, "orders:create") || hasPermission(role, "orders:manage")) {
+    tools.push(read.searchOrders, read.getOrder, read.searchSuppliers, read.getSupplier);
   }
   if (hasPermission(role, "dashboard:view")) {
     tools.push(read.getDashboardKpis);
@@ -61,13 +73,22 @@ export function getToolsForContext(ctx: ToolContext, options?: { planningMode?: 
   } else if (!planningMode) {
     // Mode exécution (après confirmation) : write tools directs
     if (hasPermission(role, "customers:edit")) {
-      tools.push(write.createCustomer, write.createVehicle);
+      tools.push(write.createCustomer, write.createVehicle, write.updateCustomer, write.updateVehicle);
     }
     if (hasPermission(role, "repair-orders:edit")) {
-      tools.push(write.createRepairOrder, write.updateRepairOrderStatus);
+      tools.push(write.createRepairOrder, write.updateRepairOrderStatus, write.updateRepairOrder);
     }
     if (hasPermission(role, "quotes:edit")) {
       tools.push(write.createQuoteDraft);
+    }
+    if (hasPermission(role, "stock:edit")) {
+      tools.push(write.createStockItem, write.updateStockItem);
+    }
+    if (hasPermission(role, "invoices:create")) {
+      tools.push(write.createInvoice);
+    }
+    if (hasPermission(role, "orders:manage")) {
+      tools.push(write.createSupplier, write.updateSupplier, write.updateOrderStatus);
     }
   }
 
