@@ -17,6 +17,8 @@ export interface CatalogPart {
   brand: string;
   description: string | null;
   oemNumbers: string[];
+  specs?: Array<{ name: string; value: string }>;
+  images?: string[];
 }
 
 export interface CatalogCategory {
