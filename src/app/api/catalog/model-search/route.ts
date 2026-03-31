@@ -34,11 +34,11 @@ async function handler(req: NextRequest, ctx: AuthContext) {
   }
 
   try {
-    const vehicle = await resolveVehicleByModel(parsed.data);
+    const { vehicle, variants } = await resolveVehicleByModel(parsed.data);
     if (!vehicle) {
       return NextResponse.json({ error: "Véhicule introuvable" }, { status: 404 });
     }
-    return NextResponse.json({ vehicle });
+    return NextResponse.json({ vehicle, variants });
   } catch (err) {
     if (err instanceof CatalogDisabledError) {
       return NextResponse.json({ error: err.message }, { status: 503 });

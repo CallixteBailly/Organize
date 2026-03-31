@@ -143,46 +143,42 @@ export async function resolvePlateWithCache(
  */
 export async function resolveVehicleByModel(
   params: VehicleModelSearchParams,
-): Promise<CatalogVehicle | null> {
+): Promise<{ vehicle: CatalogVehicle | null; variants: CatalogVehicle[] }> {
   const config = getCatalogConfig();
   if (!config.enabled) throw new CatalogDisabledError();
 
   const cacheKey = `model:${params.make.toLowerCase().replace(/\s+/g, "_")}:${params.model.toLowerCase().replace(/\s+/g, "_")}:${params.year ?? "0"}:${params.fuelType ?? "any"}`;
 
   const cached = await getCachedVehicle(cacheKey);
-  if (cached) return cached;
+  if (cached) return { vehicle: cached, variants: [] };
 
   const { vehicle: vehicleProvider, parts: partsProvider } = getProviders();
 
-  let vehicle: CatalogVehicle | null = null;
+  let allResults: CatalogVehicle[] = [];
 
   // Essayer d'abord le partsProvider (CustomApiProvider a searchVehiclesByModel avec 82k+ variantes)
   if ("searchVehiclesByModel" in partsProvider && partsProvider.searchVehiclesByModel) {
-    const results = await partsProvider.searchVehiclesByModel(params);
-    vehicle = results[0] ?? null;
+    allResults = await partsProvider.searchVehiclesByModel(params);
   }
 
   // Fallback: vehicleProvider (L'Argus / Mock)
-  if (!vehicle && "searchVehiclesByModel" in vehicleProvider && vehicleProvider.searchVehiclesByModel) {
-    const results = await vehicleProvider.searchVehiclesByModel(params);
-    vehicle = results[0] ?? null;
+  if (allResults.length === 0 && "searchVehiclesByModel" in vehicleProvider && vehicleProvider.searchVehiclesByModel) {
+    allResults = await vehicleProvider.searchVehiclesByModel(params);
   }
 
-  // Fallback: synthetic vehicle from the provided params
-  if (!vehicle) {
-    vehicle = {
-      kTypeId: modelToKTypeId(params.make, params.model, params.year),
-      make: params.make,
-      model: params.model,
-      year: params.year ?? null,
-      engineCode: null,
-      fuelType: params.fuelType ?? null,
-      displacement: null,
-    };
+  // Filtrer par marque exacte en priorité
+  const makeLower = params.make.toLowerCase();
+  const exactMakeResults = allResults.filter((r) => r.make.toLowerCase() === makeLower);
+  const filtered = exactMakeResults.length > 0 ? exactMakeResults : allResults;
+
+  const vehicle = filtered[0] ?? null;
+
+  if (vehicle) {
+    await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);
   }
 
-  await setCachedVehicle(cacheKey, vehicle, config.cacheTtlVehicle);
-  return vehicle;
+  // Retourner toutes les variantes si plus d'un résultat
+  return { vehicle, variants: filtered.length > 1 ? filtered : [] };
 }
 
 /**

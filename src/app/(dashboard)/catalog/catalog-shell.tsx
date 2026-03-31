@@ -40,6 +40,7 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
   const [partsLoading, setPartsLoading] = useState(false);
   const [vehicle, setVehicle] = useState<CatalogVehicle | null>(null);
   const [localVehicle, setLocalVehicle] = useState<LocalVehicle | null>(null);
+  const [variants, setVariants] = useState<CatalogVehicle[]>([]);
   const [categories, setCategories] = useState<CatalogCategory[] | null>(null);
   const [searchedPlate, setSearchedPlate] = useState(initialPlate ?? "");
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
     setSearchMode(mode);
     setVehicle(null);
     setLocalVehicle(null);
+    setVariants([]);
     setCategories(null);
     setLookupError(null);
     setPartsError(null);
@@ -117,12 +119,22 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
     [fetchParts],
   );
 
+  const selectVariant = useCallback(
+    async (v: CatalogVehicle) => {
+      setVehicle(v);
+      setVariants([]);
+      await fetchParts(v.kTypeId, v.make, v.model);
+    },
+    [fetchParts],
+  );
+
   const handleModelSearch = useCallback(
     async (params: ModelSearchParams) => {
       setLookupLoading(true);
       setLookupError(null);
       setVehicle(null);
       setLocalVehicle(null);
+      setVariants([]);
       setCategories(null);
       setPartsError(null);
 
@@ -139,9 +151,15 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
           setLookupError(data.error ?? "Véhicule introuvable");
           return;
         }
-        const data: { vehicle: CatalogVehicle } = await res.json();
-        setVehicle(data.vehicle);
-        await fetchParts(data.vehicle.kTypeId, data.vehicle.make, data.vehicle.model);
+        const data: { vehicle: CatalogVehicle; variants: CatalogVehicle[] } = await res.json();
+
+        if (data.variants.length > 1) {
+          // Plusieurs variantes — laisser l'utilisateur choisir
+          setVariants(data.variants);
+        } else {
+          setVehicle(data.vehicle);
+          await fetchParts(data.vehicle.kTypeId, data.vehicle.make, data.vehicle.model);
+        }
       } catch {
         setLookupError("Erreur réseau lors de la recherche");
       } finally {
@@ -202,6 +220,31 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
           error={lookupError}
           onSearch={handleModelSearch}
         />
+      )}
+
+      {variants.length > 1 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">{variants.length} variantes trouvees — selectionnez votre vehicule :</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {variants.map((v) => (
+              <button
+                key={v.kTypeId}
+                type="button"
+                onClick={() => selectVariant(v)}
+                className="rounded-[var(--radius)] border border-border p-3 text-left transition-colors hover:bg-secondary/50 hover:border-primary"
+              >
+                <p className="font-medium">{v.make} {v.model}</p>
+                <p className="text-sm text-muted-foreground">
+                  {v.year && <span>{v.year}</span>}
+                  {v.variant && <span> — {v.variant}</span>}
+                  {v.fuelType && <span> — {v.fuelType}</span>}
+                  {v.displacement && <span> — {v.displacement} cc</span>}
+                  {v.powerKw && <span> — {v.powerKw} kW</span>}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {vehicle && (
