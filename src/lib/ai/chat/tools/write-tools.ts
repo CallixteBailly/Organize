@@ -1,6 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod/v4";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, or, ilike, inArray } from "drizzle-orm";
 import { createCustomer, updateCustomer } from "@/server/services/customer.service";
 import { createVehicle, updateVehicle } from "@/server/services/vehicle.service";
 import { createRepairOrder, updateRepairOrder } from "@/server/services/repair-order.service";
@@ -10,7 +10,7 @@ import { createInvoice } from "@/server/services/invoice.service";
 import { updateOrderStatus } from "@/server/services/order.service";
 import { createSupplier, updateSupplier } from "@/server/services/supplier.service";
 import { db } from "@/lib/db";
-import { repairOrders } from "@/lib/db/schema";
+import { repairOrders, customers, vehicles, stockItems, suppliers } from "@/lib/db/schema";
 import type { ToolContext } from "../types";
 
 function sanitizePhone(phone?: string): string | undefined {
@@ -44,6 +44,35 @@ export function createWriteTools(ctx: ToolContext) {
 
       const phone = sanitizePhone(input.phone);
 
+      // Vérifier les doublons par téléphone, email ou nom
+      const dupConditions = [];
+      if (phone) dupConditions.push(eq(customers.phone, phone));
+      if (input.email) dupConditions.push(eq(customers.email, input.email.trim().toLowerCase()));
+      if (input.companyName) dupConditions.push(ilike(customers.companyName, input.companyName.trim()));
+      if (input.firstName && input.lastName) {
+        dupConditions.push(
+          and(ilike(customers.firstName, input.firstName.trim()), ilike(customers.lastName, input.lastName.trim()))!,
+        );
+      }
+
+      if (dupConditions.length > 0) {
+        const [existing] = await db
+          .select()
+          .from(customers)
+          .where(and(eq(customers.garageId, garageId), or(...dupConditions)))
+          .limit(1);
+        if (existing) {
+          const existingName = existing.type === "company"
+            ? existing.companyName
+            : [existing.firstName, existing.lastName].filter(Boolean).join(" ");
+          return JSON.stringify({
+            error: `Un client similaire existe déjà : ${existingName} (${existing.phone || existing.email || ""}). Utilisez update_customer pour le modifier.`,
+            existingId: existing.id,
+            existingName,
+          });
+        }
+      }
+
       try {
         const customer = await createCustomer(garageId, {
           type: input.type,
@@ -71,7 +100,8 @@ export function createWriteTools(ctx: ToolContext) {
     },
     {
       name: "create_customer",
-      description: "Crée un nouveau client (particulier ou entreprise).",
+      description:
+        "Crée un nouveau client (particulier ou entreprise). Vérifie les doublons avant création.",
       schema: z.object({
         type: z.enum(["individual", "company"]).describe("Type de client"),
         firstName: z.string().optional().describe("Prénom (particulier)"),
@@ -92,10 +122,25 @@ export function createWriteTools(ctx: ToolContext) {
       year?: number;
       mileage?: number;
     }) => {
+      const plate = input.licensePlate.toUpperCase().replace(/[\s\-]/g, "");
+
+      // Vérifier doublon par plaque d'immatriculation
+      const [existing] = await db
+        .select()
+        .from(vehicles)
+        .where(and(eq(vehicles.garageId, garageId), eq(vehicles.licensePlate, plate)))
+        .limit(1);
+      if (existing) {
+        return JSON.stringify({
+          error: `Un véhicule avec la plaque ${plate} existe déjà : ${existing.brand} ${existing.model}. Utilisez update_vehicle pour le modifier.`,
+          existingId: existing.id,
+        });
+      }
+
       try {
         const vehicle = await createVehicle(garageId, {
           customerId: input.customerId,
-          licensePlate: input.licensePlate.toUpperCase().replace(/[\s\-]/g, ""),
+          licensePlate: plate,
           brand: input.brand.trim(),
           model: input.model.trim(),
           year: input.year,
@@ -371,6 +416,19 @@ export function createWriteTools(ctx: ToolContext) {
       location?: string;
       vatRate?: number;
     }) => {
+      // Vérifier doublon par référence
+      const [existing] = await db
+        .select()
+        .from(stockItems)
+        .where(and(eq(stockItems.garageId, garageId), eq(stockItems.reference, input.reference.trim())))
+        .limit(1);
+      if (existing) {
+        return JSON.stringify({
+          error: `Un article avec la référence ${input.reference.trim()} existe déjà : ${existing.name}. Utilisez update_stock_item pour le modifier.`,
+          existingId: existing.id,
+        });
+      }
+
       try {
         const item = await createStockItem(garageId, {
           name: input.name.trim(),
@@ -581,6 +639,19 @@ export function createWriteTools(ctx: ToolContext) {
       website?: string;
       deliveryDays?: number;
     }) => {
+      // Vérifier doublon par nom
+      const [existing] = await db
+        .select()
+        .from(suppliers)
+        .where(and(eq(suppliers.garageId, garageId), ilike(suppliers.name, input.name.trim())))
+        .limit(1);
+      if (existing) {
+        return JSON.stringify({
+          error: `Un fournisseur nommé "${existing.name}" existe déjà. Utilisez update_supplier pour le modifier.`,
+          existingId: existing.id,
+        });
+      }
+
       try {
         const supplier = await createSupplier(garageId, {
           name: input.name.trim(),
