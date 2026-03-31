@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCurrency, formatDate, formatPhone } from "../format";
+import { formatCurrency, formatDate, formatPhone, roundCents } from "../format";
 
 describe("formatCurrency", () => {
   it("formats number correctly", () => {
@@ -58,5 +58,27 @@ describe("formatPhone", () => {
 
   it("handles already formatted number", () => {
     expect(formatPhone("06 12 34 56 78")).toBe("06 12 34 56 78");
+  });
+});
+
+describe("roundCents", () => {
+  it("avoids classic floating-point errors", () => {
+    // 0.1 + 0.2 === 0.30000000000000004 in JS
+    expect(roundCents(0.1 + 0.2)).toBe(0.3);
+  });
+
+  it("rounds to 2 decimal places", () => {
+    expect(roundCents(1.456)).toBe(1.46);
+    expect(roundCents(1.004)).toBe(1);
+    expect(roundCents(99.999)).toBe(100);
+  });
+
+  it("handles whole numbers", () => {
+    expect(roundCents(42)).toBe(42);
+  });
+
+  it("handles negative values", () => {
+    expect(roundCents(-1.005)).toBe(-1);
+    expect(roundCents(-0.1 - 0.2)).toBe(-0.3);
   });
 });

@@ -1,4 +1,4 @@
-import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { eq, and, sql, desc, inArray, gte, lte } from "drizzle-orm";
 import { db, type Transaction } from "@/lib/db";
 import {
   invoices,
@@ -10,6 +10,7 @@ import {
   payments,
 } from "@/lib/db/schema";
 import { computeNF525Hash } from "@/lib/utils/nf525";
+import { roundCents } from "@/lib/utils/format";
 import type { CreateInvoiceInput, InvoiceLineInput } from "@/server/validators/invoice";
 import type { PaginationInput } from "@/server/validators/common";
 
@@ -89,12 +90,19 @@ export async function createInvoice(
     .filter(Boolean)
     .join(", ");
 
-  const [garage] = await db.select().from(garages).where(eq(garages.id, garageId)).limit(1);
-  const prefix = garage?.invoicePrefix ?? "FA";
-  const nextNum = garage?.nextInvoiceNumber ?? 1;
-  const invoiceNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
-
   return db.transaction(async (tx: Transaction) => {
+    // Lock the garage row to prevent concurrent invoice number allocation
+    const [garage] = await tx
+      .select()
+      .from(garages)
+      .where(eq(garages.id, garageId))
+      .for("update")
+      .limit(1);
+
+    const prefix = garage?.invoicePrefix ?? "FA";
+    const nextNum = garage?.nextInvoiceNumber ?? 1;
+    const invoiceNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
+
     const [invoice] = await tx
       .insert(invoices)
       .values({
@@ -144,13 +152,13 @@ export async function generateInvoiceFromRepairOrder(
     .where(eq(repairOrderLines.repairOrderId, roId))
     .orderBy(repairOrderLines.sortOrder);
 
-  // Get garage settings for payment terms
-  const [garage] = await db.select().from(garages).where(eq(garages.id, garageId)).limit(1);
-  const paymentDays = garage?.settings?.paymentTermsDays ?? 30;
+  // Get garage settings for payment terms (read outside transaction — createInvoice locks for numbering)
+  const [garageSettings] = await db.select().from(garages).where(eq(garages.id, garageId)).limit(1);
+  const paymentDays = garageSettings?.settings?.paymentTermsDays ?? 30;
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + paymentDays);
 
-  // Create invoice
+  // Create invoice (uses FOR UPDATE internally for number allocation)
   const invoice = await createInvoice(garageId, userId, {
     customerId: ro.customerId,
     repairOrderId: roId,
@@ -161,7 +169,7 @@ export async function generateInvoiceFromRepairOrder(
   if (roLines.length > 0) {
     const lineValues = roLines.map((l: typeof repairOrderLines.$inferSelect) => {
       const ht = Number(l.totalHt);
-      const vatAmount = ht * (Number(l.vatRate) / 100);
+      const vatAmount = roundCents(ht * (Number(l.vatRate) / 100));
       return {
         invoiceId: invoice.id,
         type: l.type,
@@ -199,8 +207,8 @@ export async function addInvoiceLine(garageId: string, data: InvoiceLineInput) {
   const qty = Number(data.quantity);
   const price = Number(data.unitPrice);
   const discount = Number(data.discountPercent);
-  const totalHt = qty * price * (1 - discount / 100);
-  const totalVat = totalHt * (Number(data.vatRate) / 100);
+  const totalHt = roundCents(qty * price * (1 - discount / 100));
+  const totalVat = roundCents(totalHt * (Number(data.vatRate) / 100));
 
   const [line] = await db
     .insert(invoiceLines)
@@ -238,11 +246,11 @@ async function recalculateInvoiceTotals(invoiceId: string, garageId: string) {
   let totalVat = 0;
 
   for (const line of lines) {
-    totalHt += Number(line.totalHt);
-    totalVat += Number(line.totalVat);
+    totalHt = roundCents(totalHt + Number(line.totalHt));
+    totalVat = roundCents(totalVat + Number(line.totalVat));
   }
 
-  const totalTtc = totalHt + totalVat;
+  const totalTtc = roundCents(totalHt + totalVat);
 
   await db
     .update(invoices)
@@ -337,7 +345,7 @@ export async function recordPayment(
       .where(eq(invoices.id, data.invoiceId))
       .limit(1);
 
-    const newAmountPaid = Number(invoice.amountPaid) + data.amount;
+    const newAmountPaid = roundCents(Number(invoice.amountPaid) + data.amount);
     const totalTtc = Number(invoice.totalTtc);
 
     let newStatus = invoice.status;
@@ -370,6 +378,8 @@ export async function generateFECExport(garageId: string, startDate: Date, endDa
       and(
         eq(invoices.garageId, garageId),
         inArray(invoices.status, ["finalized", "sent", "paid", "partially_paid", "overdue"]),
+        gte(invoices.issueDate, startDate),
+        lte(invoices.issueDate, endDate),
       ),
     )
     .orderBy(invoices.nf525Sequence);

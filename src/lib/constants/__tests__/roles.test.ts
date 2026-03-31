@@ -9,10 +9,14 @@ describe("hasPermission", () => {
     expect(hasPermission("owner", "accounting:export")).toBe(true);
   });
 
-  it("manager has all permissions", () => {
+  it("manager has operational permissions but not settings", () => {
     expect(hasPermission("manager", "dashboard:view")).toBe(true);
     expect(hasPermission("manager", "invoices:finalize")).toBe(true);
-    expect(hasPermission("manager", "settings:garage")).toBe(true);
+    expect(hasPermission("manager", "accounting:export")).toBe(true);
+
+    // Settings reserved to owner
+    expect(hasPermission("manager", "settings:garage")).toBe(false);
+    expect(hasPermission("manager", "settings:users")).toBe(false);
   });
 
   it("mechanic has limited permissions", () => {
