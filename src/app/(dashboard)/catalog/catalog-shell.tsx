@@ -64,6 +64,8 @@ export function CatalogShell({ initialPlate, targetRepairOrderId, useHistovec }:
       url.searchParams.set("kTypeId", String(kTypeId));
       if (vehicleMake) url.searchParams.set("make", vehicleMake);
       if (vehicleModel) url.searchParams.set("model", vehicleModel);
+      // Force refresh pour récupérer les données à jour de l'API
+      url.searchParams.set("refresh", "1");
       const res = await fetch(url.toString());
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthContext } from "@/server/middleware/with-auth";
 import { getPartsWithCache, CatalogDisabledError, CatalogProviderError } from "@/lib/catalog";
+import { deleteCachedParts } from "@/lib/catalog/cache";
 import { checkAIRateLimit } from "@/lib/ai/rate-limit";
 
 async function handler(req: NextRequest, ctx: AuthContext) {
   const rawKTypeId = req.nextUrl.searchParams.get("kTypeId");
   const make = req.nextUrl.searchParams.get("make") ?? undefined;
   const model = req.nextUrl.searchParams.get("model") ?? undefined;
+  const refresh = req.nextUrl.searchParams.get("refresh") === "1";
 
   if (!rawKTypeId) {
     return NextResponse.json({ error: "Le paramètre kTypeId est requis" }, { status: 400 });
@@ -24,6 +26,10 @@ async function handler(req: NextRequest, ctx: AuthContext) {
   }
 
   try {
+    // Invalider le cache si refresh demandé
+    if (refresh) {
+      await deleteCachedParts(kTypeId);
+    }
     const categories = await getPartsWithCache(kTypeId, make, model);
     return NextResponse.json({ categories });
   } catch (err) {

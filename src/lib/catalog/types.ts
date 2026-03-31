@@ -6,6 +6,8 @@ export interface CatalogVehicle {
   engineCode: string | null;
   fuelType: string | null;
   displacement: number | null;
+  variant?: string | null;
+  powerKw?: number | null;
 }
 
 export interface CatalogPart {

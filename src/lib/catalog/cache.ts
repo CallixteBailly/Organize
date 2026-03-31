@@ -85,3 +85,14 @@ export async function setCachedParts(
     // Cache non critique — on ignore l'erreur
   }
 }
+
+export async function deleteCachedParts(kTypeId: number): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+
+  try {
+    await (redis as unknown as { del: (key: string) => Promise<void> }).del(`catalog:parts:${kTypeId}`);
+  } catch {
+    // Ignore
+  }
+}

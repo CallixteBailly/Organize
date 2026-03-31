@@ -151,14 +151,24 @@ export class CustomApiProvider implements IVehicleCatalogProvider {
       `/api/catalog/search-vehicles?${qs.toString()}`,
     );
 
-    return data.data.map((v) => ({
-      kTypeId: v.kTypeId,
-      make: v.make,
-      model: `${v.model} ${v.variant}`.trim(),
-      year: v.year,
-      engineCode: v.engineCode,
-      fuelType: v.fuelType,
-      displacement: v.displacement,
-    }));
+    return data.data.map((v) => {
+      // Le model TecDoc contient souvent le fabricant en préfixe (ex: "PEUGEOT 208 Camionnette")
+      // On le retire pour éviter la duplication "PEUGEOT PEUGEOT 208..."
+      let cleanModel = v.model;
+      if (cleanModel.toUpperCase().startsWith(v.make.toUpperCase())) {
+        cleanModel = cleanModel.slice(v.make.length).trim();
+      }
+      return {
+        kTypeId: v.kTypeId,
+        make: v.make,
+        model: cleanModel,
+        year: v.year,
+        engineCode: v.engineCode,
+        fuelType: v.fuelType,
+        displacement: v.displacement,
+        variant: v.variant || null,
+        powerKw: v.powerKw,
+      };
+    });
   }
 }
