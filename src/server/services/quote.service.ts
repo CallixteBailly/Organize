@@ -8,6 +8,7 @@ import {
   garages,
   repairOrders,
 } from "@/lib/db/schema";
+import { roundCents } from "@/lib/utils/format";
 import type { CreateQuoteInput, QuoteLineInput } from "@/server/validators/quote";
 import type { PaginationInput } from "@/server/validators/common";
 
@@ -69,12 +70,19 @@ export async function getQuoteById(garageId: string, quoteId: string) {
 }
 
 export async function createQuote(garageId: string, userId: string, data: CreateQuoteInput) {
-  const [garage] = await db.select().from(garages).where(eq(garages.id, garageId)).limit(1);
-  const prefix = garage?.quotePrefix ?? "DE";
-  const nextNum = garage?.nextQuoteNumber ?? 1;
-  const quoteNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
-
   return db.transaction(async (tx: Transaction) => {
+    // Lock the garage row to prevent concurrent quote number allocation
+    const [garage] = await tx
+      .select()
+      .from(garages)
+      .where(eq(garages.id, garageId))
+      .for("update")
+      .limit(1);
+
+    const prefix = garage?.quotePrefix ?? "DE";
+    const nextNum = garage?.nextQuoteNumber ?? 1;
+    const quoteNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
+
     const [quote] = await tx
       .insert(quotes)
       .values({
@@ -101,7 +109,7 @@ export async function addQuoteLine(garageId: string, data: QuoteLineInput) {
   const qty = Number(data.quantity);
   const price = Number(data.unitPrice);
   const discount = Number(data.discountPercent);
-  const totalHt = qty * price * (1 - discount / 100);
+  const totalHt = roundCents(qty * price * (1 - discount / 100));
 
   const [line] = await db
     .insert(quoteLines)
@@ -140,14 +148,14 @@ async function recalculateQuoteTotals(quoteId: string, garageId: string) {
 
   for (const line of lines) {
     const ht = Number(line.totalHt);
-    const vat = ht * (Number(line.vatRate) / 100);
-    if (line.type === "part") totalPartsHt += ht;
-    else totalLaborHt += ht;
-    totalVat += vat;
+    const vat = roundCents(ht * (Number(line.vatRate) / 100));
+    if (line.type === "part") totalPartsHt = roundCents(totalPartsHt + ht);
+    else totalLaborHt = roundCents(totalLaborHt + ht);
+    totalVat = roundCents(totalVat + vat);
   }
 
-  const totalHt = totalPartsHt + totalLaborHt;
-  const totalTtc = totalHt + totalVat;
+  const totalHt = roundCents(totalPartsHt + totalLaborHt);
+  const totalTtc = roundCents(totalHt + totalVat);
 
   await db
     .update(quotes)
@@ -170,12 +178,19 @@ export async function convertQuoteToRepairOrder(
   const quoteData = await getQuoteById(garageId, quoteId);
   if (!quoteData) throw new Error("Devis non trouve");
 
-  const [garage] = await db.select().from(garages).where(eq(garages.id, garageId)).limit(1);
-  const prefix = garage?.repairOrderPrefix ?? "OR";
-  const nextNum = garage?.nextRepairOrderNumber ?? 1;
-  const roNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
-
   return db.transaction(async (tx: Transaction) => {
+    // Lock the garage row to prevent concurrent OR number allocation
+    const [garage] = await tx
+      .select()
+      .from(garages)
+      .where(eq(garages.id, garageId))
+      .for("update")
+      .limit(1);
+
+    const prefix = garage?.repairOrderPrefix ?? "OR";
+    const nextNum = garage?.nextRepairOrderNumber ?? 1;
+    const roNumber = `${prefix}-${String(nextNum).padStart(5, "0")}`;
+
     // Create repair order
     const [ro] = await tx
       .insert(repairOrders)

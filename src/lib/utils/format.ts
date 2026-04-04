@@ -31,3 +31,11 @@ export function formatPhone(phone: string): string {
   }
   return phone;
 }
+
+/**
+ * Round a number to 2 decimal places using integer math to avoid
+ * floating-point precision issues (e.g. 0.1 + 0.2 !== 0.3).
+ */
+export function roundCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}

@@ -21,6 +21,7 @@ import { revalidatePath } from "next/cache";
 export type RepairOrderActionState = {
   success: boolean;
   error?: string;
+  warning?: string;
   repairOrderId?: string;
 };
 
@@ -137,18 +138,22 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
 
     // Auto-générer la facture depuis l'OR clôturé
     let invoiceId: string | undefined;
+    let invoiceWarning: string | undefined;
     try {
       const invoice = await generateInvoiceFromRepairOrder(session.user.garageId, roId, session.user.id);
       invoiceId = invoice.id;
-    } catch {
-      // La facture n'a pas pu être générée (ex: OR déjà facturé) — on ne bloque pas la clôture
+    } catch (err) {
+      // La clôture a réussi mais la facture n'a pas pu être générée — on prévient l'utilisateur
+      invoiceWarning = err instanceof Error
+        ? `OR cloture mais la facture n'a pas pu etre generee : ${err.message}`
+        : "OR cloture mais la facture n'a pas pu etre generee automatiquement";
     }
 
     revalidatePath(`/repair-orders/${roId}`);
     revalidatePath("/repair-orders");
     revalidatePath("/invoices");
     revalidatePath("/stock");
-    return { success: true, repairOrderId: invoiceId };
+    return { success: true, repairOrderId: invoiceId, warning: invoiceWarning };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Erreur lors de la cloture";
     return { success: false, error: msg };

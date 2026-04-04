@@ -75,12 +75,14 @@ function LoginForm() {
           <Button type="submit" className="mt-2 w-full" disabled={loading}>
             {loading ? <Spinner className="h-4 w-4" /> : "Se connecter"}
           </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            Pas encore de compte ?{" "}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+              Mot de passe oublie ?
+            </Link>
             <Link href="/register" className="font-medium text-primary hover:underline">
               Creer mon garage
             </Link>
-          </p>
+          </div>
         </form>
       </CardContent>
     </Card>

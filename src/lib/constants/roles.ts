@@ -60,8 +60,6 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "quotes:edit",
     "customers:view",
     "customers:edit",
-    "settings:garage",
-    "settings:users",
     "accounting:export",
     "catalog:view",
   ],
