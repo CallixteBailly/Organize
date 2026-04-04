@@ -9,7 +9,7 @@ function getResend(): Resend {
   return _resend;
 }
 
-const FROM_EMAIL = "Organize <noreply@organize.app>";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "Organize <onboarding@resend.dev>";
 
 export type EmailPayload = {
   to: string;
