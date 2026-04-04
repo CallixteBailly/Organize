@@ -29,7 +29,7 @@ export async function updateGarageAction(
 
   try {
     await updateGarage(session.user.garageId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",

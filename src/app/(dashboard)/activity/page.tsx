@@ -12,7 +12,7 @@ export default async function ActivityPage() {
   if (!session?.user) redirect("/login");
 
   const role = session.user.role as UserRole;
-  if (!hasPermission(role, "dashboard:view")) {
+  if (!hasPermission(role, "activity:view")) {
     redirect("/repair-orders");
   }
 

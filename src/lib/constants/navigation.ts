@@ -74,7 +74,7 @@ export const mainNavItems: NavItem[] = [
     label: "Activite",
     href: "/activity",
     icon: Activity,
-    permission: "dashboard:view",
+    permission: "activity:view",
     mobileVisible: false,
   },
   {

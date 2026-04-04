@@ -29,7 +29,7 @@ export async function createVehicleAction(
   try {
     const vehicle = await createVehicle(session.user.garageId, parsed.data);
     const desc = [parsed.data.brand, parsed.data.model, parsed.data.licensePlate].filter(Boolean).join(" ");
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -63,7 +63,7 @@ export async function updateVehicleAction(
 
   try {
     await updateVehicle(session.user.garageId, vehicleId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",

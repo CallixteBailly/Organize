@@ -33,7 +33,7 @@ export async function confirmQuickCaptureAction(
       parsed.data,
     );
 
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       source: "ai",

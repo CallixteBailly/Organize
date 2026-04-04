@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import { hasPermission, type UserRole } from "@/lib/constants/roles";
 import { getActivities, type GetActivitiesFilters } from "@/server/services/activity-log.service";
 import { paginationSchema } from "@/server/validators/common";
 import { activityFiltersSchema } from "@/server/validators/activity-log";
@@ -15,7 +16,7 @@ export async function getActivityLogsAction(params: {
   userId?: string;
 }) {
   const session = await auth();
-  if (!session?.user || !["owner", "manager"].includes(session.user.role)) {
+  if (!session?.user || !hasPermission(session.user.role as UserRole, "activity:view")) {
     return { success: false as const, error: "Acces reserve aux gerants" };
   }
 

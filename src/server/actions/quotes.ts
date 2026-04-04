@@ -39,7 +39,7 @@ export async function createQuoteAction(
 
   try {
     const quote = await createQuote(session.user.garageId, session.user.id, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -103,7 +103,7 @@ export async function convertQuoteAction(quoteId: string): Promise<QuoteActionSt
       quoteId,
       session.user.id,
     );
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "convert",
@@ -168,7 +168,7 @@ export async function sendQuoteAction(quoteId: string): Promise<QuoteActionState
       garageEmail: garage?.email ?? undefined,
     });
 
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "send",

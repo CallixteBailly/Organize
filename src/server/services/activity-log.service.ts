@@ -98,7 +98,8 @@ export async function getActivities(
     conditions.push(eq(activityLogs.userId, filters.userId));
   }
   if (filters?.search) {
-    conditions.push(ilike(activityLogs.description, `%${filters.search}%`));
+    const escaped = filters.search.replace(/[%_\\]/g, "\\$&");
+    conditions.push(ilike(activityLogs.description, `%${escaped}%`));
   }
 
   const whereClause = and(...conditions);

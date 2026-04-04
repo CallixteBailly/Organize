@@ -41,7 +41,7 @@ export async function createStockItemAction(
 
   try {
     const item = await createStockItem(session.user.garageId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -75,7 +75,7 @@ export async function updateStockItemAction(
 
   try {
     await updateStockItem(session.user.garageId, itemId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",
@@ -98,7 +98,7 @@ export async function deactivateStockItemAction(itemId: string): Promise<StockAc
 
   try {
     await deactivateStockItem(session.user.garageId, itemId);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "delete",
@@ -129,7 +129,7 @@ export async function recordMovementAction(
 
   try {
     await recordStockMovement(session.user.garageId, session.user.id, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",
@@ -170,7 +170,7 @@ export async function createCategoryAction(
 
   try {
     await createCategory(session.user.garageId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -192,7 +192,7 @@ export async function deleteCategoryAction(categoryId: string): Promise<Category
 
   try {
     await deleteCategory(session.user.garageId, categoryId);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "delete",

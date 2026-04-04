@@ -40,7 +40,7 @@ export async function createSupplierAction(
 
   try {
     await createSupplier(session.user.garageId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -76,7 +76,7 @@ export async function updateSupplierAction(
 
   try {
     await updateSupplier(session.user.garageId, supplierId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",
@@ -99,7 +99,7 @@ export async function deactivateSupplierAction(supplierId: string): Promise<Supp
 
   try {
     await deactivateSupplier(session.user.garageId, supplierId);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "delete",
@@ -130,7 +130,7 @@ export async function quickOrderAction(
 
   try {
     const order = await quickOrder(session.user.garageId, session.user.id, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -155,7 +155,7 @@ export async function updateOrderStatusAction(
 
   try {
     await updateOrderStatus(session.user.garageId, orderId, status);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "status_change",

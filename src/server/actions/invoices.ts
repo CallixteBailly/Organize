@@ -50,7 +50,7 @@ export async function createInvoiceAction(
 
   try {
     const invoice = await createInvoice(session.user.garageId, session.user.id, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -78,7 +78,7 @@ export async function generateFromRepairOrderAction(roId: string): Promise<Invoi
       roId,
       session.user.id,
     );
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -150,7 +150,7 @@ export async function finalizeInvoiceAction(invoiceId: string): Promise<InvoiceA
 
   try {
     await finalizeInvoice(session.user.garageId, invoiceId);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "finalize",
@@ -183,7 +183,7 @@ export async function recordPaymentAction(
 
   try {
     await recordPayment(session.user.garageId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "payment",
@@ -282,7 +282,7 @@ export async function sendInvoiceAction(
       });
     }
 
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "send",

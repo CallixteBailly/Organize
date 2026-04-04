@@ -46,7 +46,7 @@ export async function createRepairOrderAction(
 
   try {
     const ro = await createRepairOrder(session.user.garageId, session.user.id, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -80,7 +80,7 @@ export async function updateRepairOrderAction(
 
   try {
     await updateRepairOrder(session.user.garageId, roId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",
@@ -144,7 +144,7 @@ export async function recordSignatureAction(
 
   try {
     await recordSignature(session.user.garageId, roId, signatureDataUrl);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "sign",
@@ -165,7 +165,7 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
 
   try {
     await closeRepairOrder(session.user.garageId, roId, session.user.id);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "close",

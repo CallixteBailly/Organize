@@ -33,7 +33,7 @@ export async function createCustomerAction(
   try {
     const customer = await createCustomer(session.user.garageId, parsed.data);
     const customerName = [parsed.data.firstName, parsed.data.lastName].filter(Boolean).join(" ") || parsed.data.companyName || "";
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -67,7 +67,7 @@ export async function updateCustomerAction(
 
   try {
     await updateCustomer(session.user.garageId, customerId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",
@@ -90,7 +90,7 @@ export async function deleteCustomerAction(customerId: string): Promise<Customer
 
   try {
     await deleteCustomer(session.user.garageId, customerId);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "delete",

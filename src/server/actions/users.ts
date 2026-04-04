@@ -66,7 +66,7 @@ export async function createUserAction(
       }).catch((err) => console.error("[createUser] Erreur envoi email invitation:", err));
     }
 
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "create",
@@ -106,7 +106,7 @@ export async function updateUserAction(
 
   try {
     await updateUser(session.user.garageId, userId, parsed.data);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "update",
@@ -134,7 +134,7 @@ export async function deactivateUserAction(userId: string): Promise<UserActionSt
 
   try {
     await deactivateUser(session.user.garageId, userId);
-    logActivity({
+    await logActivity({
       garageId: session.user.garageId,
       userId: session.user.id,
       action: "delete",
