@@ -5,17 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Bell,
-  Package,
-  AlertTriangle,
-  DollarSign,
-  Clock,
   CheckCircle,
-  Wrench,
-  UserPlus,
-  Bot,
-  Truck,
-  CreditCard,
-  ClipboardList,
   Trash2,
   CheckCheck,
   ChevronLeft,
@@ -25,48 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getNotificationConfig, type NotificationItem } from "@/lib/constants/notification-types";
+import { formatDateTime } from "@/lib/utils/format";
 import {
   markAsReadAction,
   markAllAsReadAction,
   deleteNotificationAction,
 } from "@/server/actions/notifications";
-
-type Notification = {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  link: string | null;
-  isRead: boolean;
-  createdAt: Date;
-  metadata: Record<string, unknown> | null;
-};
-
-const typeConfig: Record<string, { icon: typeof Bell; variant: "default" | "secondary" | "success" | "warning" | "destructive" }> = {
-  stock_low: { icon: Package, variant: "warning" },
-  invoice_overdue: { icon: AlertTriangle, variant: "destructive" },
-  invoice_paid: { icon: DollarSign, variant: "success" },
-  quote_expired: { icon: Clock, variant: "warning" },
-  quote_accepted: { icon: CheckCircle, variant: "success" },
-  repair_order_completed: { icon: Wrench, variant: "success" },
-  repair_order_assigned: { icon: ClipboardList, variant: "default" },
-  customer_created: { icon: UserPlus, variant: "default" },
-  customer_created_ai: { icon: Bot, variant: "secondary" },
-  order_delivered: { icon: Truck, variant: "success" },
-  payment_received: { icon: CreditCard, variant: "success" },
-  user_action: { icon: ClipboardList, variant: "default" },
-  system: { icon: Bell, variant: "secondary" },
-};
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function NotificationList({
   notifications,
@@ -75,7 +30,7 @@ export function NotificationList({
   page,
   limit,
 }: {
-  notifications: Notification[];
+  notifications: NotificationItem[];
   total: number;
   unreadCount: number;
   page: number;
@@ -122,7 +77,6 @@ export function NotificationList({
 
   return (
     <div className="space-y-4">
-      {/* Actions bar */}
       {unreadCount > 0 && (
         <div className="flex justify-end">
           <Button
@@ -137,10 +91,9 @@ export function NotificationList({
         </div>
       )}
 
-      {/* Notifications */}
       <div className="space-y-2">
         {notifications.map((notif) => {
-          const config = typeConfig[notif.type] || typeConfig.system;
+          const config = getNotificationConfig(notif.type);
           const Icon = config.icon;
 
           return (
@@ -158,20 +111,16 @@ export function NotificationList({
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className={`text-sm ${!notif.isRead ? "font-semibold" : "font-medium"} text-foreground`}>
-                          {notif.title}
-                        </p>
-                        <Badge variant={config.variant} className="text-[10px]">
-                          {notif.type.replace(/_/g, " ")}
-                        </Badge>
-                      </div>
-                      <p className="mt-0.5 text-sm text-muted-foreground">{notif.message}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{formatDate(notif.createdAt)}</p>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <p className={`text-sm ${!notif.isRead ? "font-semibold" : "font-medium"} text-foreground`}>
+                      {notif.title}
+                    </p>
+                    <Badge variant={config.variant} className="text-[10px]">
+                      {notif.type.replace(/_/g, " ")}
+                    </Badge>
                   </div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{notif.message}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(notif.createdAt)}</p>
 
                   <div className="mt-2 flex items-center gap-2">
                     {notif.link && (
@@ -216,7 +165,6 @@ export function NotificationList({
         })}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <p className="text-sm text-muted-foreground">

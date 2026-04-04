@@ -270,8 +270,6 @@ export async function notifyPaymentReceived(
   }, userId);
 }
 
-// ── Batch: Check low stock for entire garage ──
-
 export async function checkAndNotifyLowStock(garageId: string) {
   const lowStockItems = await db
     .select()
@@ -284,17 +282,16 @@ export async function checkAndNotifyLowStock(garageId: string) {
       ),
     );
 
-  const created = [];
-  for (const item of lowStockItems) {
-    const notif = await notifyStockLow(garageId, {
-      id: item.id,
-      name: item.name,
-      reference: item.reference,
-      quantity: item.quantity,
-      minQuantity: item.minQuantity,
-    });
-    created.push(notif);
-  }
+  if (lowStockItems.length === 0) return [];
 
-  return created;
+  const values = lowStockItems.map((item) => ({
+    garageId,
+    type: "stock_low" as const,
+    title: "Stock bas",
+    message: `${item.name} (${item.reference}) : ${item.quantity} restant(s), seuil minimum : ${item.minQuantity}`,
+    link: "/stock",
+    metadata: { stockItemId: item.id, quantity: item.quantity, minQuantity: item.minQuantity },
+  }));
+
+  return db.insert(notifications).values(values).returning();
 }

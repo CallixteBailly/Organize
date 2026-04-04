@@ -33,7 +33,6 @@ export async function createCustomerAction(
   try {
     const customer = await createCustomer(session.user.garageId, parsed.data);
 
-    // Notification nouveau client (non bloquant)
     notifyCustomerCreated(
       session.user.garageId,
       { id: customer.id, firstName: customer.firstName ?? "", lastName: customer.lastName ?? "" },

@@ -73,7 +73,6 @@ export async function updateRepairOrderAction(
   try {
     await updateRepairOrder(session.user.garageId, roId, parsed.data);
 
-    // Notification si assignation (non bloquant)
     if (parsed.data.assignedTo && parsed.data.assignedTo !== "") {
       db.select()
         .from(repairOrders)
@@ -161,45 +160,36 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
   try {
     await closeRepairOrder(session.user.garageId, roId, session.user.id);
 
-    // Notification intervention terminée (non bloquant)
-    db.select()
-      .from(repairOrders)
-      .where(eq(repairOrders.id, roId))
-      .limit(1)
-      .then(([ro]) => {
-        if (ro) {
-          notifyRepairOrderCompleted(
-            session.user.garageId,
-            { id: ro.id, repairOrderNumber: ro.repairOrderNumber },
-            session.user.id,
-          ).catch((err) => console.error("[closeRO] Erreur notification:", err));
-        }
-      })
-      .catch((err) => console.error("[closeRO] Erreur fetch RO pour notification:", err));
-
-    // Auto-générer la facture depuis l'OR clôturé
     let invoiceId: string | undefined;
     let invoiceWarning: string | undefined;
     try {
       const invoice = await generateInvoiceFromRepairOrder(session.user.garageId, roId, session.user.id);
       invoiceId = invoice.id;
     } catch (err) {
-      // La clôture a réussi mais la facture n'a pas pu être générée — on prévient l'utilisateur
       invoiceWarning = err instanceof Error
         ? `OR cloture mais la facture n'a pas pu etre generee : ${err.message}`
         : "OR cloture mais la facture n'a pas pu etre generee automatiquement";
     }
 
-    // Envoi email "vehicule pret" au client (non bloquant)
+    // Notification + email vehicule pret (non bloquant, single fetch)
     db.select()
       .from(repairOrders)
       .where(eq(repairOrders.id, roId))
       .limit(1)
       .then(async ([ro]) => {
         if (!ro) return;
-        const [customer] = await db.select().from(customers).where(eq(customers.id, ro.customerId)).limit(1);
-        const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, ro.vehicleId)).limit(1);
-        const [garage] = await db.select().from(garages).where(eq(garages.id, session.user.garageId)).limit(1);
+
+        notifyRepairOrderCompleted(
+          session.user.garageId,
+          { id: ro.id, repairOrderNumber: ro.repairOrderNumber },
+          session.user.id,
+        ).catch((err) => console.error("[closeRO] Erreur notification:", err));
+
+        const [customer, vehicle, garage] = await Promise.all([
+          db.select().from(customers).where(eq(customers.id, ro.customerId)).limit(1).then(([c]) => c),
+          db.select().from(vehicles).where(eq(vehicles.id, ro.vehicleId)).limit(1).then(([v]) => v),
+          db.select().from(garages).where(eq(garages.id, session.user.garageId)).limit(1).then(([g]) => g),
+        ]);
         if (customer?.email && vehicle && garage) {
           const vehicleDesc = [vehicle.brand, vehicle.model, vehicle.licensePlate].filter(Boolean).join(" ");
           sendVehicleReadyEmail({
@@ -213,7 +203,7 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
             garageAddress: [garage.address, garage.postalCode, garage.city].filter(Boolean).join(", "),
           }).catch((err) => console.error("[closeRO] Erreur envoi email vehicule pret:", err));
         }
-      }).catch((err) => console.error("[closeRO] Erreur recuperation donnees pour email:", err));
+      }).catch((err) => console.error("[closeRO] Erreur post-cloture:", err));
 
     revalidatePath(`/repair-orders/${roId}`);
     revalidatePath("/repair-orders");

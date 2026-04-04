@@ -33,7 +33,6 @@ export async function confirmQuickCaptureAction(
       parsed.data,
     );
 
-    // Notification si client créé par l'IA (non bloquant)
     if (!parsed.data.customer.existingId) {
       notifyCustomerCreatedByAI(
         session.user.garageId,

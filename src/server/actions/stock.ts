@@ -106,7 +106,6 @@ export async function recordMovementAction(
   try {
     await recordStockMovement(session.user.garageId, session.user.id, parsed.data);
 
-    // Vérification stock bas après mouvement de sortie (non bloquant)
     if (parsed.data.type === "exit") {
       getStockItemById(session.user.garageId, parsed.data.stockItemId)
         .then((item) => {

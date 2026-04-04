@@ -1,59 +1,21 @@
 "use client";
 
 import { useState, useEffect, useTransition, useCallback } from "react";
-import { Bell, Check, CheckCheck, Trash2, ExternalLink } from "lucide-react";
+import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getNotificationsAction,
   getUnreadCountAction,
   markAllAsReadAction,
 } from "@/server/actions/notifications";
+import { getNotificationConfig, type NotificationItem } from "@/lib/constants/notification-types";
+import { formatRelativeTime } from "@/lib/utils/format";
 import Link from "next/link";
-
-type Notification = {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  link: string | null;
-  isRead: boolean;
-  createdAt: Date;
-};
-
-const typeIcons: Record<string, string> = {
-  stock_low: "📦",
-  invoice_overdue: "⚠️",
-  invoice_paid: "💰",
-  quote_expired: "⏰",
-  quote_accepted: "✅",
-  repair_order_completed: "🔧",
-  repair_order_assigned: "👤",
-  customer_created: "👥",
-  customer_created_ai: "🤖",
-  order_delivered: "🚚",
-  payment_received: "💳",
-  user_action: "📋",
-  system: "🔔",
-};
-
-function timeAgo(date: Date): string {
-  const now = new Date();
-  const diff = now.getTime() - new Date(date).getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return "A l'instant";
-  if (minutes < 60) return `Il y a ${minutes} min`;
-  if (hours < 24) return `Il y a ${hours}h`;
-  if (days < 7) return `Il y a ${days}j`;
-  return new Date(date).toLocaleDateString("fr-FR");
-}
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [items, setItems] = useState<Notification[]>([]);
+  const [items, setItems] = useState<NotificationItem[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const fetchUnreadCount = useCallback(() => {
@@ -66,7 +28,7 @@ export function NotificationBell() {
   const fetchNotifications = useCallback(() => {
     startTransition(async () => {
       const result = await getNotificationsAction(1, 10);
-      setItems(result.items as Notification[]);
+      setItems(result.items as NotificationItem[]);
       setUnreadCount(result.unreadCount);
     });
   }, []);
@@ -110,31 +72,25 @@ export function NotificationBell() {
 
       {isOpen && (
         <>
-          {/* Backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
-          {/* Dropdown */}
           <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-[var(--shadow-lg)] sm:w-96">
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
-              <div className="flex items-center gap-1">
-                {unreadCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleMarkAllRead}
-                    className="h-7 text-xs"
-                    disabled={isPending}
-                  >
-                    <CheckCheck className="mr-1 h-3 w-3" />
-                    Tout lire
-                  </Button>
-                )}
-              </div>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllRead}
+                  className="h-7 text-xs"
+                  disabled={isPending}
+                >
+                  <CheckCheck className="mr-1 h-3 w-3" />
+                  Tout lire
+                </Button>
+              )}
             </div>
 
-            {/* List */}
             <div className="max-h-80 overflow-y-auto">
               {items.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -150,7 +106,7 @@ export function NotificationBell() {
                   >
                     <div className="flex items-start gap-2.5">
                       <span className="mt-0.5 text-base" aria-hidden="true">
-                        {typeIcons[notif.type] || "🔔"}
+                        {getNotificationConfig(notif.type).emoji}
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground">{notif.title}</p>
@@ -159,7 +115,7 @@ export function NotificationBell() {
                         </p>
                         <div className="mt-1 flex items-center gap-2">
                           <span className="text-[10px] text-muted-foreground">
-                            {timeAgo(notif.createdAt)}
+                            {formatRelativeTime(notif.createdAt)}
                           </span>
                           {notif.link && (
                             <Link
@@ -181,7 +137,6 @@ export function NotificationBell() {
               )}
             </div>
 
-            {/* Footer */}
             <div className="border-t border-border px-4 py-2">
               <Link
                 href="/notifications"
