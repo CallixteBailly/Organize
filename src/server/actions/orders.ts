@@ -8,6 +8,7 @@ import {
 } from "@/server/validators/order";
 import { createSupplier, updateSupplier, deactivateSupplier } from "@/server/services/supplier.service";
 import { quickOrder, updateOrderStatus } from "@/server/services/order.service";
+import { notifyOrderDelivered } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 
 export type OrderActionState = {
@@ -122,7 +123,21 @@ export async function updateOrderStatusAction(
   if (!session?.user) return { success: false, error: "Non authentifie" };
 
   try {
-    await updateOrderStatus(session.user.garageId, orderId, status);
+    const order = await updateOrderStatus(session.user.garageId, orderId, status);
+
+    // Notification si livraison (non bloquant)
+    if (status === "delivered" && order) {
+      notifyOrderDelivered(
+        session.user.garageId,
+        {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          supplierName: order.supplierOrderRef ?? "Fournisseur",
+        },
+        session.user.id,
+      ).catch((err) => console.error("[order] Erreur notification:", err));
+    }
+
     revalidatePath(`/orders/${orderId}`);
     revalidatePath("/orders");
     return { success: true };

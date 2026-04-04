@@ -23,6 +23,7 @@ import {
   sendInvoiceEmail,
   sendPaymentConfirmationEmail,
 } from "@/server/services/email.service";
+import { notifyPaymentReceived } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 
 export type InvoiceActionState = {
@@ -157,6 +158,22 @@ export async function recordPaymentAction(
 
   try {
     await recordPayment(session.user.garageId, parsed.data);
+
+    // Notification paiement recu (non bloquant)
+    getInvoiceById(session.user.garageId, parsed.data.invoiceId).then(async (data) => {
+      if (data) {
+        notifyPaymentReceived(
+          session.user.garageId,
+          {
+            invoiceNumber: data.invoice.invoiceNumber,
+            invoiceId: data.invoice.id,
+            amount: parsed.data.amount,
+            method: parsed.data.method,
+          },
+          session.user.id,
+        ).catch((err) => console.error("[payment] Erreur notification:", err));
+      }
+    }).catch(() => {});
 
     // Envoi email de confirmation de paiement (non bloquant)
     getInvoiceById(session.user.garageId, parsed.data.invoiceId).then(async (data) => {

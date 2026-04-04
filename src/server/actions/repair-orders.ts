@@ -20,6 +20,7 @@ import {
 } from "@/server/services/repair-order.service";
 import { generateInvoiceFromRepairOrder } from "@/server/services/invoice.service";
 import { sendVehicleReadyEmail } from "@/server/services/email.service";
+import { notifyRepairOrderCompleted, notifyRepairOrderAssigned } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 
 export type RepairOrderActionState = {
@@ -71,6 +72,26 @@ export async function updateRepairOrderAction(
 
   try {
     await updateRepairOrder(session.user.garageId, roId, parsed.data);
+
+    // Notification si assignation (non bloquant)
+    if (parsed.data.assignedTo && parsed.data.assignedTo !== "") {
+      db.select()
+        .from(repairOrders)
+        .where(eq(repairOrders.id, roId))
+        .limit(1)
+        .then(([ro]) => {
+          if (ro) {
+            notifyRepairOrderAssigned(
+              session.user.garageId,
+              { id: ro.id, repairOrderNumber: ro.repairOrderNumber },
+              parsed.data.assignedTo!,
+              session.user.id,
+            ).catch((err) => console.error("[updateRO] Erreur notification:", err));
+          }
+        })
+        .catch((err) => console.error("[updateRO] Erreur fetch RO pour notification:", err));
+    }
+
     revalidatePath(`/repair-orders/${roId}`);
     return { success: true };
   } catch {
@@ -139,6 +160,22 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
 
   try {
     await closeRepairOrder(session.user.garageId, roId, session.user.id);
+
+    // Notification intervention terminée (non bloquant)
+    db.select()
+      .from(repairOrders)
+      .where(eq(repairOrders.id, roId))
+      .limit(1)
+      .then(([ro]) => {
+        if (ro) {
+          notifyRepairOrderCompleted(
+            session.user.garageId,
+            { id: ro.id, repairOrderNumber: ro.repairOrderNumber },
+            session.user.id,
+          ).catch((err) => console.error("[closeRO] Erreur notification:", err));
+        }
+      })
+      .catch((err) => console.error("[closeRO] Erreur fetch RO pour notification:", err));
 
     // Auto-générer la facture depuis l'OR clôturé
     let invoiceId: string | undefined;

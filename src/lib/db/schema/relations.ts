@@ -17,6 +17,7 @@ import { quoteLines } from "./quote-lines";
 import { invoices } from "./invoices";
 import { invoiceLines } from "./invoice-lines";
 import { payments } from "./payments";
+import { notifications } from "./notifications";
 
 // Garages
 export const garagesRelations = relations(garages, ({ many }) => ({
@@ -30,6 +31,7 @@ export const garagesRelations = relations(garages, ({ many }) => ({
   quotes: many(quotes),
   invoices: many(invoices),
   payments: many(payments),
+  notifications: many(notifications),
 }));
 
 // Users
@@ -180,4 +182,10 @@ export const invoiceLinesRelations = relations(invoiceLines, ({ one }) => ({
 export const paymentsRelations = relations(payments, ({ one }) => ({
   garage: one(garages, { fields: [payments.garageId], references: [garages.id] }),
   invoice: one(invoices, { fields: [payments.invoiceId], references: [invoices.id] }),
+}));
+
+// Notifications
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  garage: one(garages, { fields: [notifications.garageId], references: [garages.id] }),
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
 }));

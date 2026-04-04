@@ -12,10 +12,12 @@ import {
   updateStockItem,
   deactivateStockItem,
   recordStockMovement,
+  getStockItemById,
   createCategory,
   updateCategory,
   deleteCategory,
 } from "@/server/services/stock.service";
+import { notifyStockLow } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 
 export type StockActionState = {
@@ -103,6 +105,24 @@ export async function recordMovementAction(
 
   try {
     await recordStockMovement(session.user.garageId, session.user.id, parsed.data);
+
+    // Vérification stock bas après mouvement de sortie (non bloquant)
+    if (parsed.data.type === "exit") {
+      getStockItemById(session.user.garageId, parsed.data.stockItemId)
+        .then((item) => {
+          if (item && item.quantity <= item.minQuantity) {
+            notifyStockLow(session.user.garageId, {
+              id: item.id,
+              name: item.name,
+              reference: item.reference,
+              quantity: item.quantity,
+              minQuantity: item.minQuantity,
+            }).catch((err) => console.error("[stock] Erreur notification:", err));
+          }
+        })
+        .catch((err) => console.error("[stock] Erreur check stock bas:", err));
+    }
+
     revalidatePath(`/stock/${parsed.data.stockItemId}`);
     revalidatePath("/stock");
     revalidatePath("/stock/alerts");

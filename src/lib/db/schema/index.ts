@@ -34,5 +34,8 @@ export * from "./payments";
 export * from "./password-reset-tokens";
 export * from "./invitation-tokens";
 
+// Notification tables
+export * from "./notifications";
+
 // Relations
 export * from "./relations";

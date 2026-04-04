@@ -7,6 +7,7 @@ import {
   updateCustomer,
   deleteCustomer,
 } from "@/server/services/customer.service";
+import { notifyCustomerCreated } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 
 export type CustomerActionState = {
@@ -31,6 +32,14 @@ export async function createCustomerAction(
 
   try {
     const customer = await createCustomer(session.user.garageId, parsed.data);
+
+    // Notification nouveau client (non bloquant)
+    notifyCustomerCreated(
+      session.user.garageId,
+      { id: customer.id, firstName: customer.firstName ?? "", lastName: customer.lastName ?? "" },
+      session.user.id,
+    ).catch((err) => console.error("[customer] Erreur notification:", err));
+
     revalidatePath("/customers");
     return { success: true, customerId: customer.id };
   } catch {
