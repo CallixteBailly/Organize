@@ -1,7 +1,13 @@
 import { Resend } from "resend";
 import type { ReactElement } from "react";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 const FROM_EMAIL = "Organize <noreply@organize.app>";
 
@@ -17,7 +23,7 @@ export async function sendEmail(payload: EmailPayload) {
     return null;
   }
 
-  const { data, error } = await resend.emails.send({
+  const { data, error } = await getResend().emails.send({
     from: FROM_EMAIL,
     to: payload.to,
     subject: payload.subject,

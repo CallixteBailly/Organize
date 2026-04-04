@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,14 @@ import { resetPasswordAction, type ResetPasswordState } from "@/server/actions/p
 const initialState: ResetPasswordState = { success: false };
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<Spinner className="mx-auto h-8 w-8" />}>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [state, formAction, isPending] = useActionState(resetPasswordAction, initialState);
