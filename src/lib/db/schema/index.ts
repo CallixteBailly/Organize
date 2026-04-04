@@ -32,6 +32,7 @@ export * from "./payments";
 
 // Auth tables
 export * from "./password-reset-tokens";
+export * from "./invitation-tokens";
 
 // Relations
 export * from "./relations";

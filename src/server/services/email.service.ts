@@ -59,7 +59,7 @@ export async function sendInvitationEmail(params: {
   garageName: string;
   role: string;
   invitedBy: string;
-  tempPassword: string;
+  activationUrl: string;
 }) {
   const { InvitationEmail } = await import("@/lib/email/templates/invitation");
   return sendEmail({

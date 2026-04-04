@@ -6,7 +6,7 @@ interface InvitationEmailProps {
   garageName: string;
   role: string;
   invitedBy: string;
-  tempPassword: string;
+  activationUrl: string;
 }
 
 const roleLabels: Record<string, string> = {
@@ -21,7 +21,7 @@ export function InvitationEmail({
   garageName,
   role,
   invitedBy,
-  tempPassword,
+  activationUrl,
 }: InvitationEmailProps) {
   return (
     <EmailLayout preview={`${invitedBy} vous invite a rejoindre ${garageName}`}>
@@ -34,32 +34,21 @@ export function InvitationEmail({
         <strong>{garageName}</strong> avec le role <strong>{roleLabels[role] ?? role}</strong>.
       </Text>
       <Text style={paragraph}>
-        Voici vos identifiants de connexion temporaires :
+        Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et activer votre compte :
       </Text>
-      <Text style={credentials}>
-        Mot de passe : <strong>{tempPassword}</strong>
-      </Text>
-      <Text style={paragraph}>
-        Nous vous recommandons de changer votre mot de passe des votre premiere connexion.
-      </Text>
-      <Button style={button} href={`${process.env.AUTH_URL ?? "https://app.organize.fr"}/login`}>
-        Se connecter
+      <Button style={button} href={activationUrl}>
+        Activer mon compte
       </Button>
+      <Text style={paragraph}>
+        Ce lien est valable <strong>72 heures</strong>. Si vous n&apos;avez pas demande cette
+        invitation, vous pouvez ignorer cet email.
+      </Text>
     </EmailLayout>
   );
 }
 
 const heading = { fontSize: "20px", fontWeight: "bold" as const, color: "#1a1a1a" };
 const paragraph = { fontSize: "14px", lineHeight: "24px", color: "#525f7f" };
-const credentials = {
-  fontSize: "14px",
-  lineHeight: "24px",
-  color: "#1a1a1a",
-  backgroundColor: "#f4f4f5",
-  padding: "12px 16px",
-  borderRadius: "6px",
-  fontFamily: "monospace",
-};
 const button = {
   backgroundColor: "#1a1a1a",
   borderRadius: "5px",
