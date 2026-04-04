@@ -34,6 +34,7 @@ export async function createUserAction(
     await createUser(session.user.garageId, parsed.data);
 
     // Envoi email d'invitation (non bloquant)
+    // TODO: Remplacer l'envoi du mot de passe temporaire par un lien d'activation securise
     db.select({ name: garages.name })
       .from(garages)
       .where(eq(garages.id, session.user.garageId))

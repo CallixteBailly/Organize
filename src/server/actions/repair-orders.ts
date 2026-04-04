@@ -176,7 +176,7 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
             garageAddress: [garage.address, garage.postalCode, garage.city].filter(Boolean).join(", "),
           }).catch((err) => console.error("[closeRO] Erreur envoi email vehicule pret:", err));
         }
-      });
+      }).catch((err) => console.error("[closeRO] Erreur recuperation donnees pour email:", err));
 
     revalidatePath(`/repair-orders/${roId}`);
     revalidatePath("/repair-orders");

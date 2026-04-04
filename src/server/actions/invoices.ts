@@ -8,7 +8,6 @@ import {
   createInvoiceSchema,
   invoiceLineSchema,
   recordPaymentSchema,
-  sendInvoiceSchema,
 } from "@/server/validators/invoice";
 import {
   createInvoice,

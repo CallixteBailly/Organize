@@ -34,6 +34,12 @@ export async function forgotPasswordAction(
       const token = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
 
+      // Invalider les anciens tokens pour cet utilisateur
+      await db
+        .update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(and(eq(passwordResetTokens.userId, user.id), isNull(passwordResetTokens.usedAt)));
+
       await db.insert(passwordResetTokens).values({
         userId: user.id,
         token,
