@@ -1,6 +1,9 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { customers, vehicles, garages, repairOrders } from "@/lib/db/schema";
 import {
   createRepairOrderSchema,
   updateRepairOrderSchema,
@@ -16,6 +19,7 @@ import {
   closeRepairOrder,
 } from "@/server/services/repair-order.service";
 import { generateInvoiceFromRepairOrder } from "@/server/services/invoice.service";
+import { sendVehicleReadyEmail } from "@/server/services/email.service";
 import { revalidatePath } from "next/cache";
 
 export type RepairOrderActionState = {
@@ -148,6 +152,31 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
         ? `OR cloture mais la facture n'a pas pu etre generee : ${err.message}`
         : "OR cloture mais la facture n'a pas pu etre generee automatiquement";
     }
+
+    // Envoi email "vehicule pret" au client (non bloquant)
+    db.select()
+      .from(repairOrders)
+      .where(eq(repairOrders.id, roId))
+      .limit(1)
+      .then(async ([ro]) => {
+        if (!ro) return;
+        const [customer] = await db.select().from(customers).where(eq(customers.id, ro.customerId)).limit(1);
+        const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, ro.vehicleId)).limit(1);
+        const [garage] = await db.select().from(garages).where(eq(garages.id, session.user.garageId)).limit(1);
+        if (customer?.email && vehicle && garage) {
+          const vehicleDesc = [vehicle.brand, vehicle.model, vehicle.licensePlate].filter(Boolean).join(" ");
+          sendVehicleReadyEmail({
+            to: customer.email,
+            customerName: customer.companyName
+              || [customer.firstName, customer.lastName].filter(Boolean).join(" ")
+              || "Client",
+            vehicleDescription: vehicleDesc,
+            garageName: garage.name,
+            garagePhone: garage.phone ?? undefined,
+            garageAddress: [garage.address, garage.postalCode, garage.city].filter(Boolean).join(", "),
+          }).catch((err) => console.error("[closeRO] Erreur envoi email vehicule pret:", err));
+        }
+      });
 
     revalidatePath(`/repair-orders/${roId}`);
     revalidatePath("/repair-orders");

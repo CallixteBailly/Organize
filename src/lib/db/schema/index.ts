@@ -30,5 +30,8 @@ export * from "./invoice-lines";
 // Payment tables
 export * from "./payments";
 
+// Auth tables
+export * from "./password-reset-tokens";
+
 // Relations
 export * from "./relations";

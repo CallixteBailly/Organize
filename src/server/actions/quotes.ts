@@ -1,13 +1,18 @@
 "use server";
 
+import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { quotes, customers, garages } from "@/lib/db/schema";
 import { createQuoteSchema, quoteLineSchema } from "@/server/validators/quote";
 import {
   createQuote,
+  getQuoteById,
   addQuoteLine,
   removeQuoteLine,
   convertQuoteToRepairOrder,
 } from "@/server/services/quote.service";
+import { sendQuoteEmail } from "@/server/services/email.service";
 import { revalidatePath } from "next/cache";
 
 export type QuoteActionState = {
@@ -94,6 +99,71 @@ export async function convertQuoteAction(quoteId: string): Promise<QuoteActionSt
     return { success: true, repairOrderId: ro.id };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Erreur lors de la conversion";
+    return { success: false, error: msg };
+  }
+}
+
+// ── Send Quote by Email ──
+
+export async function sendQuoteAction(quoteId: string): Promise<QuoteActionState> {
+  const session = await auth();
+  if (!session?.user || !["owner", "manager", "secretary"].includes(session.user.role)) {
+    return { success: false, error: "Acces refuse" };
+  }
+
+  try {
+    const data = await getQuoteById(session.user.garageId, quoteId);
+    if (!data) return { success: false, error: "Devis introuvable" };
+
+    const { quote } = data;
+    if (quote.status === "converted") {
+      return { success: false, error: "Ce devis a deja ete converti en OR" };
+    }
+
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.id, quote.customerId), eq(customers.garageId, session.user.garageId)))
+      .limit(1);
+
+    if (!customer?.email) {
+      return { success: false, error: "Le client n'a pas d'adresse email renseignee" };
+    }
+
+    const [garage] = await db
+      .select()
+      .from(garages)
+      .where(eq(garages.id, session.user.garageId))
+      .limit(1);
+
+    const customerName = customer.companyName
+      || [customer.firstName, customer.lastName].filter(Boolean).join(" ")
+      || "Client";
+
+    await sendQuoteEmail({
+      to: customer.email,
+      customerName,
+      quoteNumber: quote.quoteNumber,
+      totalTtc: quote.totalTtc,
+      validUntil: quote.validUntil ?? undefined,
+      garageName: garage?.name ?? "Garage",
+      garageEmail: garage?.email ?? undefined,
+    });
+
+    // Mettre a jour le statut du devis
+    await db
+      .update(quotes)
+      .set({
+        status: quote.status === "draft" ? "sent" : quote.status,
+        updatedAt: new Date(),
+      })
+      .where(eq(quotes.id, quoteId));
+
+    revalidatePath(`/quotes/${quoteId}`);
+    revalidatePath("/quotes");
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Erreur lors de l'envoi du devis";
     return { success: false, error: msg };
   }
 }

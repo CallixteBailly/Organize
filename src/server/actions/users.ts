@@ -3,7 +3,11 @@
 import { auth } from "@/lib/auth";
 import { createUserSchema, updateUserSchema } from "@/server/validators/user";
 import { createUser, updateUser, deactivateUser } from "@/server/services/user.service";
+import { sendInvitationEmail } from "@/server/services/email.service";
 import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db";
+import { garages } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export type UserActionState = {
   success: boolean;
@@ -28,6 +32,25 @@ export async function createUserAction(
 
   try {
     await createUser(session.user.garageId, parsed.data);
+
+    // Envoi email d'invitation (non bloquant)
+    db.select({ name: garages.name })
+      .from(garages)
+      .where(eq(garages.id, session.user.garageId))
+      .limit(1)
+      .then(([garage]) => {
+        if (garage) {
+          sendInvitationEmail({
+            to: parsed.data.email,
+            firstName: parsed.data.firstName,
+            garageName: garage.name,
+            role: parsed.data.role,
+            invitedBy: session.user.name,
+            tempPassword: parsed.data.password,
+          }).catch((err) => console.error("[createUser] Erreur envoi email invitation:", err));
+        }
+      });
+
     revalidatePath("/settings/users");
     return { success: true };
   } catch (error: unknown) {
