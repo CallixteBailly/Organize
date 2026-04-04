@@ -21,6 +21,7 @@ import {
 import { generateInvoiceFromRepairOrder } from "@/server/services/invoice.service";
 import { sendVehicleReadyEmail } from "@/server/services/email.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type RepairOrderActionState = {
   success: boolean;
@@ -45,6 +46,14 @@ export async function createRepairOrderAction(
 
   try {
     const ro = await createRepairOrder(session.user.garageId, session.user.id, parsed.data);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "repair_order",
+      entityId: ro.id,
+      description: `Creation ordre de reparation`,
+    });
     revalidatePath("/repair-orders");
     return { success: true, repairOrderId: ro.id };
   } catch {
@@ -71,6 +80,15 @@ export async function updateRepairOrderAction(
 
   try {
     await updateRepairOrder(session.user.garageId, roId, parsed.data);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "repair_order",
+      entityId: roId,
+      description: `Modification OR`,
+      metadata: { fields: Object.keys(parsed.data) },
+    });
     revalidatePath(`/repair-orders/${roId}`);
     return { success: true };
   } catch {
@@ -126,6 +144,14 @@ export async function recordSignatureAction(
 
   try {
     await recordSignature(session.user.garageId, roId, signatureDataUrl);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "sign",
+      entityType: "repair_order",
+      entityId: roId,
+      description: `Signature enregistree sur OR`,
+    });
     revalidatePath(`/repair-orders/${roId}`);
     return { success: true };
   } catch {
@@ -139,6 +165,14 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
 
   try {
     await closeRepairOrder(session.user.garageId, roId, session.user.id);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "close",
+      entityType: "repair_order",
+      entityId: roId,
+      description: `Cloture de l'OR`,
+    });
 
     // Auto-générer la facture depuis l'OR clôturé
     let invoiceId: string | undefined;

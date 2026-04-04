@@ -9,6 +9,7 @@ import {
 import { createSupplier, updateSupplier, deactivateSupplier } from "@/server/services/supplier.service";
 import { quickOrder, updateOrderStatus } from "@/server/services/order.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type OrderActionState = {
   success: boolean;
@@ -39,6 +40,13 @@ export async function createSupplierAction(
 
   try {
     await createSupplier(session.user.garageId, parsed.data);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "supplier",
+      description: `Creation fournisseur : ${parsed.data.name}`,
+    });
     revalidatePath("/orders");
     revalidatePath("/settings/suppliers");
     return { success: true };
@@ -68,6 +76,14 @@ export async function updateSupplierAction(
 
   try {
     await updateSupplier(session.user.garageId, supplierId, parsed.data);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "supplier",
+      entityId: supplierId,
+      description: `Modification fournisseur`,
+    });
     revalidatePath("/orders");
     return { success: true };
   } catch {
@@ -83,6 +99,14 @@ export async function deactivateSupplierAction(supplierId: string): Promise<Supp
 
   try {
     await deactivateSupplier(session.user.garageId, supplierId);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "delete",
+      entityType: "supplier",
+      entityId: supplierId,
+      description: `Desactivation fournisseur`,
+    });
     revalidatePath("/orders");
     return { success: true };
   } catch {
@@ -106,6 +130,14 @@ export async function quickOrderAction(
 
   try {
     const order = await quickOrder(session.user.garageId, session.user.id, parsed.data);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "order",
+      entityId: order.id,
+      description: `Commande rapide creee`,
+    });
     revalidatePath("/orders");
     return { success: true, orderId: order.id };
   } catch (error) {
@@ -123,6 +155,15 @@ export async function updateOrderStatusAction(
 
   try {
     await updateOrderStatus(session.user.garageId, orderId, status);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "status_change",
+      entityType: "order",
+      entityId: orderId,
+      description: `Changement statut commande : ${status}`,
+      metadata: { newStatus: status },
+    });
     revalidatePath(`/orders/${orderId}`);
     revalidatePath("/orders");
     return { success: true };

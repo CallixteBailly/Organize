@@ -14,6 +14,7 @@ import {
 } from "@/server/services/quote.service";
 import { sendQuoteEmail } from "@/server/services/email.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type QuoteActionState = {
   success: boolean;
@@ -38,6 +39,14 @@ export async function createQuoteAction(
 
   try {
     const quote = await createQuote(session.user.garageId, session.user.id, parsed.data);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "quote",
+      entityId: quote.id,
+      description: `Creation devis`,
+    });
     revalidatePath("/quotes");
     return { success: true, quoteId: quote.id };
   } catch {
@@ -94,6 +103,15 @@ export async function convertQuoteAction(quoteId: string): Promise<QuoteActionSt
       quoteId,
       session.user.id,
     );
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "convert",
+      entityType: "quote",
+      entityId: quoteId,
+      description: `Conversion devis en OR`,
+      metadata: { repairOrderId: ro.id },
+    });
     revalidatePath(`/quotes/${quoteId}`);
     revalidatePath("/repair-orders");
     return { success: true, repairOrderId: ro.id };
@@ -148,6 +166,16 @@ export async function sendQuoteAction(quoteId: string): Promise<QuoteActionState
       validUntil: quote.validUntil ?? undefined,
       garageName: garage?.name ?? "Garage",
       garageEmail: garage?.email ?? undefined,
+    });
+
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "send",
+      entityType: "quote",
+      entityId: quoteId,
+      description: `Devis ${quote.quoteNumber} envoye par email`,
+      metadata: { quoteNumber: quote.quoteNumber },
     });
 
     // Mettre a jour le statut du devis

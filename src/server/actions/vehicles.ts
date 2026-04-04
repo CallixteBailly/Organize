@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { createVehicleSchema, updateVehicleSchema } from "@/server/validators/vehicle";
 import { createVehicle, updateVehicle } from "@/server/services/vehicle.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type VehicleActionState = {
   success: boolean;
@@ -27,6 +28,15 @@ export async function createVehicleAction(
 
   try {
     const vehicle = await createVehicle(session.user.garageId, parsed.data);
+    const desc = [parsed.data.brand, parsed.data.model, parsed.data.licensePlate].filter(Boolean).join(" ");
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "vehicle",
+      entityId: vehicle.id,
+      description: `Ajout du vehicule ${desc}`,
+    });
     revalidatePath(`/customers/${parsed.data.customerId}`);
     return { success: true, vehicleId: vehicle.id };
   } catch {
@@ -53,6 +63,15 @@ export async function updateVehicleAction(
 
   try {
     await updateVehicle(session.user.garageId, vehicleId, parsed.data);
+    logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "vehicle",
+      entityId: vehicleId,
+      description: `Modification du vehicule`,
+      metadata: { fields: Object.keys(parsed.data) },
+    });
     revalidatePath(`/vehicles/${vehicleId}`);
     return { success: true };
   } catch {
