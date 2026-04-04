@@ -28,6 +28,16 @@ export async function registerAction(
 
   try {
     await registerGarageAndOwner(parsed.data);
+
+    // Envoi email de bienvenue (non bloquant)
+    import("@/server/services/email.service").then(({ sendWelcomeEmail }) => {
+      sendWelcomeEmail({
+        to: parsed.data.email,
+        firstName: parsed.data.firstName,
+        garageName: parsed.data.garageName,
+      }).catch((err) => console.error("[register] Erreur envoi email bienvenue:", err));
+    });
+
     return { success: true };
   } catch (error: unknown) {
     console.error("[register] Registration failed:", error);

@@ -1,6 +1,9 @@
 "use server";
 
+import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { invoices, customers, garages } from "@/lib/db/schema";
 import {
   createInvoiceSchema,
   invoiceLineSchema,
@@ -16,6 +19,10 @@ import {
   recordPayment,
   generateFECExport,
 } from "@/server/services/invoice.service";
+import {
+  sendInvoiceEmail,
+  sendPaymentConfirmationEmail,
+} from "@/server/services/email.service";
 import { revalidatePath } from "next/cache";
 
 export type InvoiceActionState = {
@@ -150,10 +157,112 @@ export async function recordPaymentAction(
 
   try {
     await recordPayment(session.user.garageId, parsed.data);
+
+    // Envoi email de confirmation de paiement (non bloquant)
+    getInvoiceById(session.user.garageId, parsed.data.invoiceId).then(async (data) => {
+      if (!data) return;
+      const [customer] = await db
+        .select()
+        .from(customers)
+        .where(eq(customers.id, data.invoice.customerId))
+        .limit(1);
+      const [garage] = await db
+        .select()
+        .from(garages)
+        .where(eq(garages.id, session.user.garageId))
+        .limit(1);
+      if (customer?.email && garage) {
+        sendPaymentConfirmationEmail({
+          to: customer.email,
+          customerName: data.invoice.customerName,
+          invoiceNumber: data.invoice.invoiceNumber,
+          amountPaid: parsed.data.amount.toFixed(2),
+          paymentMethod: parsed.data.method,
+          garageName: garage.name,
+        }).catch((err) => console.error("[payment] Erreur envoi email confirmation:", err));
+      }
+    });
+
     revalidatePath(`/invoices/${parsed.data.invoiceId}`);
     revalidatePath("/invoices");
     return { success: true };
   } catch {
     return { success: false, error: "Erreur lors de l'enregistrement du paiement" };
+  }
+}
+
+// ── Send Invoice by Email ──
+
+export async function sendInvoiceAction(
+  invoiceId: string,
+  via: "email" | "sms" = "email",
+): Promise<InvoiceActionState> {
+  const session = await auth();
+  if (!session?.user || !["owner", "manager", "secretary"].includes(session.user.role)) {
+    return { success: false, error: "Acces refuse" };
+  }
+
+  try {
+    const data = await getInvoiceById(session.user.garageId, invoiceId);
+    if (!data) return { success: false, error: "Facture introuvable" };
+
+    const { invoice } = data;
+    if (invoice.status === "draft") {
+      return { success: false, error: "Impossible d'envoyer un brouillon. Finalisez d'abord la facture." };
+    }
+
+    // TODO [LOI FRANCAISE - Facturation electronique 2026]:
+    // A partir de septembre 2026, les factures B2B doivent etre transmises via PDP/PPF
+    // au format Factur-X (PDF/A-3 + XML). Le simple envoi par email ne sera plus suffisant
+    // pour les clients assujettis TVA en France (presence de SIRET/TVA intra).
+    // Verifier invoice.customerSiret / invoice.customerVatNumber avant envoi.
+    // Ref: https://www.impots.gouv.fr/facturation-electronique
+
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.id, invoice.customerId), eq(customers.garageId, session.user.garageId)))
+      .limit(1);
+
+    if (!customer?.email) {
+      return { success: false, error: "Le client n'a pas d'adresse email renseignee" };
+    }
+
+    const [garage] = await db
+      .select()
+      .from(garages)
+      .where(eq(garages.id, session.user.garageId))
+      .limit(1);
+
+    if (via === "email") {
+      await sendInvoiceEmail({
+        to: customer.email,
+        customerName: invoice.customerName,
+        invoiceNumber: invoice.invoiceNumber,
+        totalTtc: invoice.totalTtc,
+        dueDate: invoice.dueDate,
+        garageName: garage?.name ?? "Garage",
+        garageEmail: garage?.email ?? undefined,
+        pdfUrl: invoice.pdfUrl ?? undefined,
+      });
+    }
+
+    // Mettre a jour la facture comme envoyee
+    await db
+      .update(invoices)
+      .set({
+        status: invoice.status === "finalized" ? "sent" : invoice.status,
+        sentAt: new Date(),
+        sentVia: via,
+        updatedAt: new Date(),
+      })
+      .where(eq(invoices.id, invoiceId));
+
+    revalidatePath(`/invoices/${invoiceId}`);
+    revalidatePath("/invoices");
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Erreur lors de l'envoi";
+    return { success: false, error: msg };
   }
 }
