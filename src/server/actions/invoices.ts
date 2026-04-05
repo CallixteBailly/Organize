@@ -24,6 +24,7 @@ import {
   sendPaymentConfirmationEmail,
 } from "@/server/services/email.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type InvoiceActionState = {
   success: boolean;
@@ -49,6 +50,14 @@ export async function createInvoiceAction(
 
   try {
     const invoice = await createInvoice(session.user.garageId, session.user.id, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "invoice",
+      entityId: invoice.id,
+      description: `Creation facture`,
+    });
     revalidatePath("/invoices");
     return { success: true, invoiceId: invoice.id };
   } catch (error) {
@@ -69,6 +78,15 @@ export async function generateFromRepairOrderAction(roId: string): Promise<Invoi
       roId,
       session.user.id,
     );
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "invoice",
+      entityId: invoice.id,
+      description: `Facture generee depuis OR`,
+      metadata: { repairOrderId: roId },
+    });
     revalidatePath("/invoices");
     revalidatePath(`/repair-orders/${roId}`);
     return { success: true, invoiceId: invoice.id };
@@ -132,6 +150,14 @@ export async function finalizeInvoiceAction(invoiceId: string): Promise<InvoiceA
 
   try {
     await finalizeInvoice(session.user.garageId, invoiceId);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "finalize",
+      entityType: "invoice",
+      entityId: invoiceId,
+      description: `Finalisation facture (NF525)`,
+    });
     revalidatePath(`/invoices/${invoiceId}`);
     revalidatePath("/invoices");
     return { success: true };
@@ -157,6 +183,15 @@ export async function recordPaymentAction(
 
   try {
     await recordPayment(session.user.garageId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "payment",
+      entityType: "payment",
+      entityId: parsed.data.invoiceId,
+      description: `Paiement enregistre : ${parsed.data.amount.toFixed(2)} EUR (${parsed.data.method})`,
+      metadata: { amount: parsed.data.amount, method: parsed.data.method, invoiceId: parsed.data.invoiceId },
+    });
 
     // Envoi email de confirmation de paiement (non bloquant)
     getInvoiceById(session.user.garageId, parsed.data.invoiceId).then(async (data) => {
@@ -246,6 +281,16 @@ export async function sendInvoiceAction(
         pdfUrl: invoice.pdfUrl ?? undefined,
       });
     }
+
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "send",
+      entityType: "invoice",
+      entityId: invoiceId,
+      description: `Facture ${invoice.invoiceNumber} envoyee par ${via}`,
+      metadata: { via, invoiceNumber: invoice.invoiceNumber },
+    });
 
     // Mettre a jour la facture comme envoyee
     await db

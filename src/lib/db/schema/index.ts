@@ -34,5 +34,8 @@ export * from "./payments";
 export * from "./password-reset-tokens";
 export * from "./invitation-tokens";
 
+// Activity logs
+export * from "./activity-logs";
+
 // Relations
 export * from "./relations";

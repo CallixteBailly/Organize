@@ -17,6 +17,7 @@ import {
   deleteCategory,
 } from "@/server/services/stock.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type StockActionState = {
   success: boolean;
@@ -40,6 +41,14 @@ export async function createStockItemAction(
 
   try {
     const item = await createStockItem(session.user.garageId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "stock",
+      entityId: item.id,
+      description: `Ajout article stock : ${parsed.data.name}`,
+    });
     revalidatePath("/stock");
     return { success: true, itemId: item.id };
   } catch {
@@ -66,6 +75,15 @@ export async function updateStockItemAction(
 
   try {
     await updateStockItem(session.user.garageId, itemId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "stock",
+      entityId: itemId,
+      description: `Modification article stock`,
+      metadata: { fields: Object.keys(parsed.data) },
+    });
     revalidatePath(`/stock/${itemId}`);
     revalidatePath("/stock");
     return { success: true };
@@ -80,6 +98,14 @@ export async function deactivateStockItemAction(itemId: string): Promise<StockAc
 
   try {
     await deactivateStockItem(session.user.garageId, itemId);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "delete",
+      entityType: "stock",
+      entityId: itemId,
+      description: `Desactivation article stock`,
+    });
     revalidatePath("/stock");
     return { success: true };
   } catch {
@@ -103,6 +129,15 @@ export async function recordMovementAction(
 
   try {
     await recordStockMovement(session.user.garageId, session.user.id, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "stock",
+      entityId: parsed.data.stockItemId,
+      description: `Mouvement stock (${parsed.data.type}) : ${parsed.data.quantity} unites`,
+      metadata: { type: parsed.data.type, quantity: parsed.data.quantity, reason: parsed.data.reason },
+    });
     revalidatePath(`/stock/${parsed.data.stockItemId}`);
     revalidatePath("/stock");
     revalidatePath("/stock/alerts");
@@ -135,6 +170,13 @@ export async function createCategoryAction(
 
   try {
     await createCategory(session.user.garageId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "stock_category",
+      description: `Creation categorie stock : ${parsed.data.name}`,
+    });
     revalidatePath("/stock/categories");
     return { success: true };
   } catch {
@@ -150,6 +192,14 @@ export async function deleteCategoryAction(categoryId: string): Promise<Category
 
   try {
     await deleteCategory(session.user.garageId, categoryId);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "delete",
+      entityType: "stock_category",
+      entityId: categoryId,
+      description: `Suppression categorie stock`,
+    });
     revalidatePath("/stock/categories");
     return { success: true };
   } catch {

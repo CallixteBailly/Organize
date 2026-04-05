@@ -7,6 +7,7 @@ import {
   Users,
   Settings,
   BookOpen,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import { hasPermission, type UserRole, type Permission } from "./roles";
@@ -67,6 +68,13 @@ export const mainNavItems: NavItem[] = [
     href: "/customers",
     icon: Users,
     permission: "customers:view",
+    mobileVisible: false,
+  },
+  {
+    label: "Activite",
+    href: "/activity",
+    icon: Activity,
+    permission: "activity:view",
     mobileVisible: false,
   },
   {

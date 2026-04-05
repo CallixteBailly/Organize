@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 import { quickCaptureConfirmSchema } from "@/server/validators/quick-capture";
 import { confirmQuickCapture } from "@/server/services/quick-capture.service";
 import type { QuickCaptureConfirmInput, QuickCaptureResult } from "@/server/validators/quick-capture";
@@ -31,6 +32,21 @@ export async function confirmQuickCaptureAction(
       session.user.id,
       parsed.data,
     );
+
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      source: "ai",
+      action: "create",
+      entityType: "repair_order",
+      entityId: result.repairOrderId,
+      description: `Saisie rapide IA confirmee par ${session.user.name}`,
+      metadata: {
+        customerId: result.customerId,
+        vehicleId: result.vehicleId,
+        invoiceId: result.invoiceId,
+      },
+    });
 
     revalidatePath("/repair-orders");
     revalidatePath("/customers");

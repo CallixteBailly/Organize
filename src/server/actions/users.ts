@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { garages, invitationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type UserActionState = {
   success: boolean;
@@ -65,6 +66,14 @@ export async function createUserAction(
       }).catch((err) => console.error("[createUser] Erreur envoi email invitation:", err));
     }
 
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "user",
+      description: `Invitation utilisateur : ${parsed.data.firstName} ${parsed.data.lastName} (${parsed.data.role})`,
+      metadata: { email: parsed.data.email, role: parsed.data.role },
+    });
     revalidatePath("/settings/users");
     return { success: true };
   } catch (error: unknown) {
@@ -97,6 +106,15 @@ export async function updateUserAction(
 
   try {
     await updateUser(session.user.garageId, userId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "user",
+      entityId: userId,
+      description: `Modification utilisateur`,
+      metadata: { fields: Object.keys(parsed.data) },
+    });
     revalidatePath("/settings/users");
     return { success: true };
   } catch {
@@ -116,6 +134,14 @@ export async function deactivateUserAction(userId: string): Promise<UserActionSt
 
   try {
     await deactivateUser(session.user.garageId, userId);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "delete",
+      entityType: "user",
+      entityId: userId,
+      description: `Desactivation utilisateur`,
+    });
     revalidatePath("/settings/users");
     return { success: true };
   } catch {

@@ -7,6 +7,7 @@ describe("hasPermission", () => {
     expect(hasPermission("owner", "settings:users")).toBe(true);
     expect(hasPermission("owner", "invoices:finalize")).toBe(true);
     expect(hasPermission("owner", "accounting:export")).toBe(true);
+    expect(hasPermission("owner", "activity:view")).toBe(true);
   });
 
   it("manager has operational permissions but not settings", () => {
@@ -35,6 +36,7 @@ describe("hasPermission", () => {
     expect(hasPermission("mechanic", "settings:users")).toBe(false);
     expect(hasPermission("mechanic", "stock:edit")).toBe(false);
     expect(hasPermission("mechanic", "accounting:export")).toBe(false);
+    expect(hasPermission("mechanic", "activity:view")).toBe(false);
   });
 
   it("secretary has invoicing but not finalization", () => {
@@ -43,6 +45,7 @@ describe("hasPermission", () => {
     expect(hasPermission("secretary", "invoices:finalize")).toBe(false);
     expect(hasPermission("secretary", "dashboard:view")).toBe(false);
     expect(hasPermission("secretary", "settings:garage")).toBe(false);
+    expect(hasPermission("secretary", "activity:view")).toBe(false);
   });
 });
 
