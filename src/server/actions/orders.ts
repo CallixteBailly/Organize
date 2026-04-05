@@ -10,6 +10,7 @@ import { createSupplier, updateSupplier, deactivateSupplier } from "@/server/ser
 import { quickOrder, updateOrderStatus } from "@/server/services/order.service";
 import { notifyOrderDelivered } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type OrderActionState = {
   success: boolean;
@@ -40,6 +41,13 @@ export async function createSupplierAction(
 
   try {
     await createSupplier(session.user.garageId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "supplier",
+      description: `Creation fournisseur : ${parsed.data.name}`,
+    });
     revalidatePath("/orders");
     revalidatePath("/settings/suppliers");
     return { success: true };
@@ -69,6 +77,14 @@ export async function updateSupplierAction(
 
   try {
     await updateSupplier(session.user.garageId, supplierId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "supplier",
+      entityId: supplierId,
+      description: `Modification fournisseur`,
+    });
     revalidatePath("/orders");
     return { success: true };
   } catch {
@@ -84,6 +100,14 @@ export async function deactivateSupplierAction(supplierId: string): Promise<Supp
 
   try {
     await deactivateSupplier(session.user.garageId, supplierId);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "delete",
+      entityType: "supplier",
+      entityId: supplierId,
+      description: `Desactivation fournisseur`,
+    });
     revalidatePath("/orders");
     return { success: true };
   } catch {
@@ -107,6 +131,14 @@ export async function quickOrderAction(
 
   try {
     const order = await quickOrder(session.user.garageId, session.user.id, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "order",
+      entityId: order.id,
+      description: `Commande rapide creee`,
+    });
     revalidatePath("/orders");
     return { success: true, orderId: order.id };
   } catch (error) {
@@ -124,8 +156,15 @@ export async function updateOrderStatusAction(
 
   try {
     const order = await updateOrderStatus(session.user.garageId, orderId, status);
-
-    // Notification si livraison (non bloquant)
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "status_change",
+      entityType: "order",
+      entityId: orderId,
+      description: `Changement statut commande : ${status}`,
+      metadata: { newStatus: status },
+    });
     if (status === "delivered" && order) {
       notifyOrderDelivered(
         session.user.garageId,
@@ -137,7 +176,6 @@ export async function updateOrderStatusAction(
         session.user.id,
       ).catch((err) => console.error("[order] Erreur notification:", err));
     }
-
     revalidatePath(`/orders/${orderId}`);
     revalidatePath("/orders");
     return { success: true };

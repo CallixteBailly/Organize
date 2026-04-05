@@ -20,7 +20,8 @@ export type Permission =
   | "settings:garage"
   | "settings:users"
   | "accounting:export"
-  | "catalog:view";
+  | "catalog:view"
+  | "activity:view";
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   owner: [
@@ -43,6 +44,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "settings:users",
     "accounting:export",
     "catalog:view",
+    "activity:view",
   ],
   manager: [
     "dashboard:view",
@@ -62,6 +64,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "customers:edit",
     "accounting:export",
     "catalog:view",
+    "activity:view",
   ],
   mechanic: [
     "stock:view",

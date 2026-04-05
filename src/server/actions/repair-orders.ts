@@ -22,6 +22,7 @@ import { generateInvoiceFromRepairOrder } from "@/server/services/invoice.servic
 import { sendVehicleReadyEmail } from "@/server/services/email.service";
 import { notifyRepairOrderCompleted, notifyRepairOrderAssigned } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type RepairOrderActionState = {
   success: boolean;
@@ -46,6 +47,14 @@ export async function createRepairOrderAction(
 
   try {
     const ro = await createRepairOrder(session.user.garageId, session.user.id, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "repair_order",
+      entityId: ro.id,
+      description: `Creation ordre de reparation`,
+    });
     revalidatePath("/repair-orders");
     return { success: true, repairOrderId: ro.id };
   } catch {
@@ -72,7 +81,15 @@ export async function updateRepairOrderAction(
 
   try {
     await updateRepairOrder(session.user.garageId, roId, parsed.data);
-
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "repair_order",
+      entityId: roId,
+      description: `Modification OR`,
+      metadata: { fields: Object.keys(parsed.data) },
+    });
     if (parsed.data.assignedTo && parsed.data.assignedTo !== "") {
       db.select()
         .from(repairOrders)
@@ -90,7 +107,6 @@ export async function updateRepairOrderAction(
         })
         .catch((err) => console.error("[updateRO] Erreur fetch RO pour notification:", err));
     }
-
     revalidatePath(`/repair-orders/${roId}`);
     return { success: true };
   } catch {
@@ -146,6 +162,14 @@ export async function recordSignatureAction(
 
   try {
     await recordSignature(session.user.garageId, roId, signatureDataUrl);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "sign",
+      entityType: "repair_order",
+      entityId: roId,
+      description: `Signature enregistree sur OR`,
+    });
     revalidatePath(`/repair-orders/${roId}`);
     return { success: true };
   } catch {
@@ -159,6 +183,14 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
 
   try {
     await closeRepairOrder(session.user.garageId, roId, session.user.id);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "close",
+      entityType: "repair_order",
+      entityId: roId,
+      description: `Cloture de l'OR`,
+    });
 
     let invoiceId: string | undefined;
     let invoiceWarning: string | undefined;

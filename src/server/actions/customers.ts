@@ -9,6 +9,7 @@ import {
 } from "@/server/services/customer.service";
 import { notifyCustomerCreated } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type CustomerActionState = {
   success: boolean;
@@ -32,13 +33,20 @@ export async function createCustomerAction(
 
   try {
     const customer = await createCustomer(session.user.garageId, parsed.data);
-
+    const customerName = [parsed.data.firstName, parsed.data.lastName].filter(Boolean).join(" ") || parsed.data.companyName || "";
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "create",
+      entityType: "customer",
+      entityId: customer.id,
+      description: `Creation du client ${customerName}`,
+    });
     notifyCustomerCreated(
       session.user.garageId,
       { id: customer.id, firstName: customer.firstName ?? "", lastName: customer.lastName ?? "" },
       session.user.id,
     ).catch((err) => console.error("[customer] Erreur notification:", err));
-
     revalidatePath("/customers");
     return { success: true, customerId: customer.id };
   } catch {
@@ -65,6 +73,15 @@ export async function updateCustomerAction(
 
   try {
     await updateCustomer(session.user.garageId, customerId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "customer",
+      entityId: customerId,
+      description: `Modification du client`,
+      metadata: { fields: Object.keys(parsed.data) },
+    });
     revalidatePath(`/customers/${customerId}`);
     revalidatePath("/customers");
     return { success: true };
@@ -79,6 +96,14 @@ export async function deleteCustomerAction(customerId: string): Promise<Customer
 
   try {
     await deleteCustomer(session.user.garageId, customerId);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "delete",
+      entityType: "customer",
+      entityId: customerId,
+      description: `Suppression du client`,
+    });
     revalidatePath("/customers");
     return { success: true };
   } catch {

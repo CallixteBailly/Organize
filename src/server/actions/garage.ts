@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { updateGarageSchema } from "@/server/validators/garage";
 import { updateGarage } from "@/server/services/garage.service";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/server/services/activity-log.service";
 
 export type GarageActionState = {
   success: boolean;
@@ -28,6 +29,15 @@ export async function updateGarageAction(
 
   try {
     await updateGarage(session.user.garageId, parsed.data);
+    await logActivity({
+      garageId: session.user.garageId,
+      userId: session.user.id,
+      action: "update",
+      entityType: "garage",
+      entityId: session.user.garageId,
+      description: `Modification parametres garage`,
+      metadata: { fields: Object.keys(parsed.data) },
+    });
     revalidatePath("/settings/garage");
     return { success: true };
   } catch (error) {

@@ -37,5 +37,8 @@ export * from "./invitation-tokens";
 // Notification tables
 export * from "./notifications";
 
+// Activity logs
+export * from "./activity-logs";
+
 // Relations
 export * from "./relations";

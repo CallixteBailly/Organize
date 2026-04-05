@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { garages } from "./garages";
 import { users } from "./users";
+import { activityLogs } from "./activity-logs";
 import { customers } from "./customers";
 import { vehicles } from "./vehicles";
 import { stockCategories } from "./stock-categories";
@@ -32,11 +33,19 @@ export const garagesRelations = relations(garages, ({ many }) => ({
   invoices: many(invoices),
   payments: many(payments),
   notifications: many(notifications),
+  activityLogs: many(activityLogs),
 }));
 
 // Users
-export const usersRelations = relations(users, ({ one }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   garage: one(garages, { fields: [users.garageId], references: [garages.id] }),
+  activityLogs: many(activityLogs),
+}));
+
+// Activity Logs
+export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
+  garage: one(garages, { fields: [activityLogs.garageId], references: [garages.id] }),
+  user: one(users, { fields: [activityLogs.userId], references: [users.id] }),
 }));
 
 // Customers

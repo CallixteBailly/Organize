@@ -68,3 +68,22 @@ export const documentTypeEnum = pgEnum("document_type", [
   "quote",
   "repair_order",
 ]);
+
+export const activityActionEnum = pgEnum("activity_action", [
+  "create",
+  "update",
+  "delete",
+  "status_change",
+  "finalize",
+  "send",
+  "payment",
+  "convert",
+  "close",
+  "sign",
+  "login",
+]);
+
+export const activitySourceEnum = pgEnum("activity_source", [
+  "user",
+  "ai",
+]);

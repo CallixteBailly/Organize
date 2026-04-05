@@ -8,6 +8,7 @@ import {
   Settings,
   BookOpen,
   Bell,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import { hasPermission, type UserRole, type Permission } from "./roles";
@@ -75,6 +76,13 @@ export const mainNavItems: NavItem[] = [
     href: "/notifications",
     icon: Bell,
     permission: "dashboard:view",
+    mobileVisible: false,
+  },
+  {
+    label: "Activite",
+    href: "/activity",
+    icon: Activity,
+    permission: "activity:view",
     mobileVisible: false,
   },
   {
