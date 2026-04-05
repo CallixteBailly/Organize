@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Wrench } from "lucide-react";
+import { NotificationBell } from "./notification-bell";
 
 export function Topbar() {
   const { data: session } = useSession();
@@ -19,6 +20,7 @@ export function Topbar() {
       <div className="flex items-center gap-2">
         {session?.user && (
           <>
+            <NotificationBell />
             <div className="hidden items-center gap-2.5 sm:flex">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/8 ring-1 ring-primary/20">
                 <User className="h-4 w-4 text-primary" aria-hidden="true" />

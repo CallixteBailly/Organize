@@ -7,6 +7,7 @@ import {
   Users,
   Settings,
   BookOpen,
+  Bell,
   Activity,
   type LucideIcon,
 } from "lucide-react";
@@ -68,6 +69,13 @@ export const mainNavItems: NavItem[] = [
     href: "/customers",
     icon: Users,
     permission: "customers:view",
+    mobileVisible: false,
+  },
+  {
+    label: "Notifications",
+    href: "/notifications",
+    icon: Bell,
+    permission: "dashboard:view",
     mobileVisible: false,
   },
   {

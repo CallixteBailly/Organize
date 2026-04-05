@@ -23,6 +23,7 @@ import {
   sendInvoiceEmail,
   sendPaymentConfirmationEmail,
 } from "@/server/services/email.service";
+import { notifyPaymentReceived } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/server/services/activity-log.service";
 
@@ -193,13 +194,25 @@ export async function recordPaymentAction(
       metadata: { amount: parsed.data.amount, method: parsed.data.method, invoiceId: parsed.data.invoiceId },
     });
 
-    // Envoi email de confirmation de paiement (non bloquant)
     getInvoiceById(session.user.garageId, parsed.data.invoiceId).then(async (data) => {
       if (!data) return;
+      const { invoice } = data;
+
+      notifyPaymentReceived(
+        session.user.garageId,
+        {
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceId: invoice.id,
+          amount: parsed.data.amount,
+          method: parsed.data.method,
+        },
+        session.user.id,
+      ).catch((err) => console.error("[payment] Erreur notification:", err));
+
       const [customer] = await db
         .select()
         .from(customers)
-        .where(eq(customers.id, data.invoice.customerId))
+        .where(eq(customers.id, invoice.customerId))
         .limit(1);
       const [garage] = await db
         .select()
@@ -209,14 +222,14 @@ export async function recordPaymentAction(
       if (customer?.email && garage) {
         sendPaymentConfirmationEmail({
           to: customer.email,
-          customerName: data.invoice.customerName,
-          invoiceNumber: data.invoice.invoiceNumber,
+          customerName: invoice.customerName,
+          invoiceNumber: invoice.invoiceNumber,
           amountPaid: parsed.data.amount.toFixed(2),
           paymentMethod: parsed.data.method,
           garageName: garage.name,
         }).catch((err) => console.error("[payment] Erreur envoi email confirmation:", err));
       }
-    });
+    }).catch((err) => console.error("[payment] Erreur post-paiement:", err));
 
     revalidatePath(`/invoices/${parsed.data.invoiceId}`);
     revalidatePath("/invoices");

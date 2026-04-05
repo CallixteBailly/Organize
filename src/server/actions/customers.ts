@@ -7,6 +7,7 @@ import {
   updateCustomer,
   deleteCustomer,
 } from "@/server/services/customer.service";
+import { notifyCustomerCreated } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/server/services/activity-log.service";
 
@@ -41,6 +42,11 @@ export async function createCustomerAction(
       entityId: customer.id,
       description: `Creation du client ${customerName}`,
     });
+    notifyCustomerCreated(
+      session.user.garageId,
+      { id: customer.id, firstName: customer.firstName ?? "", lastName: customer.lastName ?? "" },
+      session.user.id,
+    ).catch((err) => console.error("[customer] Erreur notification:", err));
     revalidatePath("/customers");
     return { success: true, customerId: customer.id };
   } catch {

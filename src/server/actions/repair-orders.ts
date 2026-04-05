@@ -20,6 +20,7 @@ import {
 } from "@/server/services/repair-order.service";
 import { generateInvoiceFromRepairOrder } from "@/server/services/invoice.service";
 import { sendVehicleReadyEmail } from "@/server/services/email.service";
+import { notifyRepairOrderCompleted, notifyRepairOrderAssigned } from "@/server/services/notification.service";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/server/services/activity-log.service";
 
@@ -89,6 +90,23 @@ export async function updateRepairOrderAction(
       description: `Modification OR`,
       metadata: { fields: Object.keys(parsed.data) },
     });
+    if (parsed.data.assignedTo && parsed.data.assignedTo !== "") {
+      db.select()
+        .from(repairOrders)
+        .where(eq(repairOrders.id, roId))
+        .limit(1)
+        .then(([ro]) => {
+          if (ro) {
+            notifyRepairOrderAssigned(
+              session.user.garageId,
+              { id: ro.id, repairOrderNumber: ro.repairOrderNumber },
+              parsed.data.assignedTo!,
+              session.user.id,
+            ).catch((err) => console.error("[updateRO] Erreur notification:", err));
+          }
+        })
+        .catch((err) => console.error("[updateRO] Erreur fetch RO pour notification:", err));
+    }
     revalidatePath(`/repair-orders/${roId}`);
     return { success: true };
   } catch {
@@ -174,29 +192,36 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
       description: `Cloture de l'OR`,
     });
 
-    // Auto-générer la facture depuis l'OR clôturé
     let invoiceId: string | undefined;
     let invoiceWarning: string | undefined;
     try {
       const invoice = await generateInvoiceFromRepairOrder(session.user.garageId, roId, session.user.id);
       invoiceId = invoice.id;
     } catch (err) {
-      // La clôture a réussi mais la facture n'a pas pu être générée — on prévient l'utilisateur
       invoiceWarning = err instanceof Error
         ? `OR cloture mais la facture n'a pas pu etre generee : ${err.message}`
         : "OR cloture mais la facture n'a pas pu etre generee automatiquement";
     }
 
-    // Envoi email "vehicule pret" au client (non bloquant)
+    // Notification + email vehicule pret (non bloquant, single fetch)
     db.select()
       .from(repairOrders)
       .where(eq(repairOrders.id, roId))
       .limit(1)
       .then(async ([ro]) => {
         if (!ro) return;
-        const [customer] = await db.select().from(customers).where(eq(customers.id, ro.customerId)).limit(1);
-        const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, ro.vehicleId)).limit(1);
-        const [garage] = await db.select().from(garages).where(eq(garages.id, session.user.garageId)).limit(1);
+
+        notifyRepairOrderCompleted(
+          session.user.garageId,
+          { id: ro.id, repairOrderNumber: ro.repairOrderNumber },
+          session.user.id,
+        ).catch((err) => console.error("[closeRO] Erreur notification:", err));
+
+        const [customer, vehicle, garage] = await Promise.all([
+          db.select().from(customers).where(eq(customers.id, ro.customerId)).limit(1).then(([c]) => c),
+          db.select().from(vehicles).where(eq(vehicles.id, ro.vehicleId)).limit(1).then(([v]) => v),
+          db.select().from(garages).where(eq(garages.id, session.user.garageId)).limit(1).then(([g]) => g),
+        ]);
         if (customer?.email && vehicle && garage) {
           const vehicleDesc = [vehicle.brand, vehicle.model, vehicle.licensePlate].filter(Boolean).join(" ");
           sendVehicleReadyEmail({
@@ -210,7 +235,7 @@ export async function closeRepairOrderAction(roId: string): Promise<RepairOrderA
             garageAddress: [garage.address, garage.postalCode, garage.city].filter(Boolean).join(", "),
           }).catch((err) => console.error("[closeRO] Erreur envoi email vehicule pret:", err));
         }
-      }).catch((err) => console.error("[closeRO] Erreur recuperation donnees pour email:", err));
+      }).catch((err) => console.error("[closeRO] Erreur post-cloture:", err));
 
     revalidatePath(`/repair-orders/${roId}`);
     revalidatePath("/repair-orders");
